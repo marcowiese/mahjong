@@ -563,7 +563,7 @@ const audio = {
   play(n) {
     if (!prefs.sound || !this.ctx) return;
     if (n === 'tick') this.click(0, 4200, .16, .016);
-    else if (n === 'match') { this.click(0, 2400, .34, .04, 1150); this.click(.075, 2800, .26, .045, 1300); }
+    else if (n === 'match') { this.click(0, 2100, .12, .028, 950); this.click(.07, 2400, .09, .028, 1050); }
     else if (n === 'no') this.click(0, 700, .12, .03);
     else if (n === 'hint') { this.click(0, 3600, .07, .015); this.click(.11, 3600, .06, .015); }
     else if (n === 'shuffle') { for (let i = 0; i < 12; i++) this.click(i * .04 + Math.random() * .02, 2000 + rnd(1400), .06 + Math.random() * .08, .035, 900 + rnd(600)); }
