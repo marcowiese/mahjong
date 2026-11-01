@@ -94,6 +94,7 @@ body.hl .tile.blocked::after{background:rgba(45,28,0,.3)}
 .swatch{width:40px;height:40px;border-radius:50%;cursor:pointer;border:3px solid transparent;box-shadow:0 2px 6px rgba(0,0,0,.25)}
 .swatch.cur{border-color:#2b2318}
 .big{font-size:56px;text-align:center;margin:4px 0}
+.edition{position:fixed;right:calc(env(safe-area-inset-right) + 18px);bottom:calc(env(safe-area-inset-bottom) + 10px);z-index:5;pointer-events:none;font-family:"Iowan Old Style",Palatino,Georgia,serif;font-style:italic;font-size:16px;letter-spacing:.6px;color:#fff;opacity:.6;text-shadow:0 1px 4px rgba(0,0,0,.5)}
 .confetti{position:fixed;inset:0;width:100%;height:100%;pointer-events:none;z-index:200}
 .toast{position:fixed;left:50%;bottom:calc(env(safe-area-inset-bottom) + 28px);transform:translateX(-50%);z-index:50;background:rgba(0,0,0,.7);
   padding:14px 22px;border-radius:16px;font-size:18px;animation:toast 2.4s forwards;pointer-events:none;white-space:nowrap}
@@ -117,6 +118,7 @@ body.hl .tile.blocked::after{background:rgba(45,28,0,.3)}
     <button class="btn" id="bSet"><svg viewBox="0 0 24 24"><path d="M4 6h9M19 6h1M4 12h3M13 12h7M4 18h11M21 18h-1"/><circle cx="16" cy="6" r="2.5"/><circle cx="10" cy="12" r="2.5"/><circle cx="18" cy="18" r="2.5"/></svg><span>Optionen</span></button>
   </div>
 </header>
+<div class="edition">Wiese Edition</div>
 <div id="stage"><div id="board"></div></div>
 
 <script>
@@ -299,7 +301,7 @@ function render(deal) {
 }
 function fit() {
   const top = $('header').getBoundingClientRect().height;
-  const aw = innerWidth - 24, ah = innerHeight - top - 16;
+  const aw = innerWidth - 24, ah = innerHeight - top - 36;
   const s = Math.min(aw / bounds.w, ah / bounds.h, 1.7);
   const ox = (innerWidth - bounds.w * s) / 2, oy = top + (ah - bounds.h * s) / 2 + 4;
   board.style.transform = `translate(${ox}px,${oy}px) scale(${s})`;
