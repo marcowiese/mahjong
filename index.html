@@ -1,0 +1,565 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Mahjong">
+<meta name="theme-color" content="#0b3a2e">
+<link rel="apple-touch-icon" href="icon.png">
+<link rel="manifest" href="manifest.webmanifest">
+<title>Mahjong</title>
+<style>
+:root{--bg1:#17644e;--bg2:#062219;--accent:#f2c94c;--jade:#1f7a5c}
+body.theme-blue{--bg1:#2459a0;--bg2:#08152b;--jade:#2459a0}
+body.theme-red{--bg1:#8a2433;--bg2:#24060b;--jade:#8a2433}
+body.theme-wood{--bg1:#8a5a2b;--bg2:#2a170a;--jade:#7a4a1f}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+html,body{margin:0;height:100%;overflow:hidden;overscroll-behavior:none;touch-action:manipulation}
+body{font-family:-apple-system,"SF Pro Rounded",system-ui,"Segoe UI",sans-serif;color:#fff;
+  background:radial-gradient(ellipse 90% 80% at 50% 40%,var(--bg1),var(--bg2));background-color:var(--bg2);transition:background-color .6s}
+#pattern{position:fixed;inset:0;pointer-events:none;opacity:.07;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='48' height='48'%3E%3Cpath d='M24 4l20 20-20 20L4 24z' fill='none' stroke='white' stroke-width='1.2'/%3E%3Ccircle cx='24' cy='24' r='3' fill='white'/%3E%3C/svg%3E")}
+header{position:fixed;top:0;left:0;right:0;z-index:10;display:flex;align-items:center;gap:12px;
+  padding:calc(env(safe-area-inset-top) + 10px) calc(env(safe-area-inset-right) + 16px) 10px calc(env(safe-area-inset-left) + 16px);
+  background:linear-gradient(rgba(0,0,0,.35),rgba(0,0,0,0))}
+.brand{font-family:"Iowan Old Style","Palatino",Georgia,serif;font-size:26px;font-weight:700;letter-spacing:.5px;display:flex;align-items:center;gap:10px;white-space:nowrap;text-shadow:0 2px 8px rgba(0,0,0,.4)}
+.brand .seal{display:inline-grid;place-items:center;width:40px;height:40px;border-radius:10px;background:linear-gradient(145deg,#d8433a,#9b1d16);font-family:"Kaiti SC","STKaiti","Songti SC","PingFang SC",serif;font-size:24px;box-shadow:0 3px 10px rgba(0,0,0,.35),inset 0 1px 0 rgba(255,255,255,.3)}
+.stats{display:flex;gap:8px;flex:1;justify-content:center}
+.chip{background:rgba(0,0,0,.25);border:1px solid rgba(255,255,255,.12);border-radius:14px;padding:6px 12px;text-align:center;min-width:76px}
+.chip b{display:block;font-size:20px;font-variant-numeric:tabular-nums;line-height:1.1}
+.chip span{font-size:11px;opacity:.75;text-transform:uppercase;letter-spacing:.6px}
+.tools{display:flex;gap:8px}
+.btn{appearance:none;border:1px solid rgba(255,255,255,.2);background:rgba(255,255,255,.12);color:#fff;border-radius:16px;
+  min-width:68px;height:60px;padding:6px 10px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;
+  font:600 12px/1 inherit;font-family:inherit;cursor:pointer;-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);
+  transition:transform .12s,background .2s}
+.btn svg{width:24px;height:24px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.btn:active{transform:scale(.92);background:rgba(255,255,255,.25)}
+.btn:disabled{opacity:.4}
+@media (max-width:900px){.brand .txt{display:none}.chip{min-width:64px;padding:5px 8px}.btn{min-width:58px}}
+@media (max-width:640px){.chip span{font-size:9px}.btn span{display:none}.btn{height:48px;min-width:48px}}
+
+#stage{position:fixed;left:0;right:0;bottom:0;top:0}
+#board{position:absolute;left:0;top:0;transform-origin:0 0}
+.tile{position:absolute;width:64px;height:86px;border-radius:9px;cursor:pointer;
+  background:linear-gradient(150deg,#fffef8 0%,#f8f0dc 55%,#ecdfbd 100%);
+  box-shadow:inset 0 0 0 1px rgba(255,255,255,.9),inset -2px -2px 4px rgba(150,120,60,.18),
+    1px 1px 0 #e3d4ae,2px 2px 0 #d8c69a,3px 3px 0 #cbb683,4px 4px 0 var(--jade),5px 5px 0 var(--jade),6px 6px 0 rgba(0,0,0,.25),
+    7px 7px 0 rgba(0,0,0,.25),8px 8px 0 rgba(0,0,0,.2),9px 12px 16px rgba(0,0,0,.5);
+  transition:transform .18s cubic-bezier(.3,1.6,.5,1),box-shadow .2s;will-change:transform}
+.tile .face{position:absolute;inset:3px 3px 4px 3px;pointer-events:none}
+.tile .face svg{width:100%;height:100%;display:block}
+.tile::after{content:"";position:absolute;inset:0;border-radius:9px;background:rgba(60,40,0,0);transition:background .35s;pointer-events:none}
+body.hl .tile.blocked::after{background:rgba(45,28,0,.3)}
+.tile.sel{transform:translate(-2px,-6px);
+  box-shadow:0 0 0 3px #ffd34d,0 0 26px 6px rgba(255,211,77,.85),
+    1px 1px 0 #e3d4ae,2px 2px 0 #d8c69a,3px 3px 0 #cbb683,4px 4px 0 var(--jade),5px 5px 0 var(--jade),6px 6px 0 rgba(0,0,0,.25),
+    7px 7px 0 rgba(0,0,0,.25),10px 16px 18px rgba(0,0,0,.4)}
+.tile.sel::after{background:rgba(255,220,100,.18)!important}
+.tile.hint{animation:hint 1s ease-in-out 3}
+@keyframes hint{0%,100%{filter:none}50%{filter:drop-shadow(0 0 10px #6ff7ff) drop-shadow(0 0 4px #6ff7ff) brightness(1.08)}}
+.tile.shake{animation:shake .38s}
+@keyframes shake{0%,100%{translate:0}20%{translate:-6px 0}40%{translate:6px 0}60%{translate:-4px 0}80%{translate:3px 0}}
+.spark{position:absolute;width:14px;height:14px;margin:-7px 0 0 -7px;pointer-events:none;z-index:99999;color:#ffe27a;font-size:16px;line-height:14px;text-align:center;text-shadow:0 0 8px #ffd34d}
+.ring{position:absolute;width:80px;height:80px;margin:-40px 0 0 -40px;border-radius:50%;border:4px solid #ffe27a;pointer-events:none;z-index:99999;box-shadow:0 0 18px #ffd34d}
+
+.overlay{position:fixed;inset:0;z-index:100;display:flex;align-items:center;justify-content:center;padding:20px;
+  background:rgba(0,0,0,.45);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);animation:fade .25s}
+.overlay.out{animation:fadeout .2s forwards}
+@keyframes fade{from{opacity:0}}@keyframes fadeout{to{opacity:0}}
+.card{background:linear-gradient(170deg,#fffcf3,#f4e9cf);color:#2b2318;border-radius:26px;padding:28px 28px 24px;width:100%;max-width:680px;max-height:calc(100% - 20px);overflow:auto;
+  box-shadow:0 30px 80px rgba(0,0,0,.5),inset 0 1px 0 #fff;animation:pop .35s cubic-bezier(.2,1.4,.4,1)}
+@keyframes pop{from{transform:scale(.85) translateY(20px);opacity:0}}
+.card h2{font-family:"Iowan Old Style",Palatino,Georgia,serif;font-size:30px;margin:0 0 6px}
+.card p{font-size:18px;line-height:1.45;margin:8px 0;color:#4a3f30}
+.row{display:flex;gap:12px;flex-wrap:wrap;margin-top:20px;justify-content:flex-end}
+.pbtn{appearance:none;border:0;border-radius:16px;padding:16px 24px;font:600 19px/1 inherit;font-family:inherit;cursor:pointer;background:#e7dcc1;color:#2b2318;transition:transform .12s}
+.pbtn.primary{background:linear-gradient(160deg,#2a9a72,#17664b);color:#fff;box-shadow:0 6px 16px rgba(23,102,75,.35)}
+.pbtn:active{transform:scale(.95)}
+.layouts{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:14px;margin-top:16px}
+.lay{border:2px solid #e2d5b5;border-radius:18px;padding:12px;background:#fffdf7;cursor:pointer;text-align:center;transition:transform .12s,border-color .2s}
+.lay:active{transform:scale(.96)}
+.lay.cur{border-color:#2a9a72}
+.lay svg{width:100%;height:100px}
+.lay b{display:block;font-size:19px;margin-top:6px}
+.lay small{display:block;font-size:14px;color:#7a6c55;margin-top:3px}
+.set{display:flex;align-items:center;justify-content:space-between;padding:14px 0;border-bottom:1px solid #e6dabd;font-size:19px;gap:12px}
+.sw{position:relative;width:62px;height:36px;border-radius:18px;background:#cfc3a6;transition:background .2s;flex:none;cursor:pointer}
+.sw::after{content:"";position:absolute;top:3px;left:3px;width:30px;height:30px;border-radius:50%;background:#fff;box-shadow:0 2px 5px rgba(0,0,0,.25);transition:transform .2s}
+.sw.on{background:#2a9a72}.sw.on::after{transform:translateX(26px)}
+.swatches{display:flex;gap:10px}
+.swatch{width:40px;height:40px;border-radius:50%;cursor:pointer;border:3px solid transparent;box-shadow:0 2px 6px rgba(0,0,0,.25)}
+.swatch.cur{border-color:#2b2318}
+.big{font-size:56px;text-align:center;margin:4px 0}
+.confetti{position:fixed;inset:0;width:100%;height:100%;pointer-events:none;z-index:200}
+.toast{position:fixed;left:50%;bottom:calc(env(safe-area-inset-bottom) + 28px);transform:translateX(-50%);z-index:50;background:rgba(0,0,0,.7);
+  padding:14px 22px;border-radius:16px;font-size:18px;animation:toast 2.4s forwards;pointer-events:none;white-space:nowrap}
+@keyframes toast{0%{opacity:0;transform:translate(-50%,20px)}10%,80%{opacity:1;transform:translate(-50%,0)}100%{opacity:0}}
+</style>
+</head>
+<body class="hl">
+<div id="pattern"></div>
+<header>
+  <div class="brand"><span class="seal">麻</span><span class="txt">Mahjong</span></div>
+  <div class="stats">
+    <div class="chip"><b id="sTime">0:00</b><span>Zeit</span></div>
+    <div class="chip"><b id="sLeft">144</b><span>Steine</span></div>
+    <div class="chip"><b id="sPairs">0</b><span>Paare frei</span></div>
+  </div>
+  <div class="tools">
+    <button class="btn" id="bNew"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="4"/><path d="M12 8v8M8 12h8"/></svg><span>Neu</span></button>
+    <button class="btn" id="bUndo"><svg viewBox="0 0 24 24"><path d="M9 14 4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11"/></svg><span>Zurück</span></button>
+    <button class="btn" id="bHint"><svg viewBox="0 0 24 24"><path d="M15 14c.2-1 .7-1.7 1.5-2.5 1-.9 1.5-2.2 1.5-3.5A6 6 0 0 0 6 8c0 1 .2 2.2 1.5 3.5.7.7 1.3 1.5 1.5 2.5"/><path d="M9 18h6M10 22h4"/></svg><span>Tipp</span></button>
+    <button class="btn" id="bShuffle"><svg viewBox="0 0 24 24"><path d="M2 18h1.4c1.3 0 2.5-.6 3.3-1.7l6.1-8.6c.7-1.1 2-1.7 3.3-1.7H22"/><path d="m18 2 4 4-4 4M2 6h1.9c1.5 0 2.9.9 3.6 2.2M22 18h-5.9c-1.3 0-2.6-.7-3.3-1.8l-.5-.8M18 14l4 4-4 4"/></svg><span>Mischen</span></button>
+    <button class="btn" id="bSet"><svg viewBox="0 0 24 24"><path d="M4 6h9M19 6h1M4 12h3M13 12h7M4 18h11M21 18h-1"/><circle cx="16" cy="6" r="2.5"/><circle cx="10" cy="12" r="2.5"/><circle cx="18" cy="18" r="2.5"/></svg><span>Optionen</span></button>
+  </div>
+</header>
+<div id="stage"><div id="board"></div></div>
+
+<script>
+(() => {
+'use strict';
+const W = 64, H = 86, HW = W / 2, HH = H / 2, LZ = 10, DEPTH = 10;
+const $ = s => document.querySelector(s);
+const rnd = n => Math.floor(Math.random() * n);
+const shuffle = a => { for (let i = a.length - 1; i > 0; i--) { const j = rnd(i + 1); [a[i], a[j]] = [a[j], a[i]]; } return a; };
+
+/* ---------- Layouts ---------- */
+function mk(build) { const P = []; const rect = (z, x0, x1, y0, y1) => { for (let y = y0; y <= y1 + 1e-9; y++) for (let x = x0; x <= x1 + 1e-9; x++) P.push({ x2: Math.round(x * 2), y2: Math.round(y * 2), z }); }; build(rect, (z, x, y) => rect(z, x, x, y, y)); return P; }
+const LAYOUTS = [
+  { id: 'turtle', name: 'Schildkröte', desc: '144 Steine · Klassiker', pos: mk((r, one) => {
+    r(0, 1, 12, 0, 0); r(0, 3, 10, 1, 1); r(0, 2, 11, 2, 2); r(0, 1, 12, 3, 4); r(0, 2, 11, 5, 5); r(0, 3, 10, 6, 6); r(0, 1, 12, 7, 7);
+    one(0, 0, 3.5); one(0, 13, 3.5); one(0, 14, 3.5);
+    r(1, 4, 9, 1, 6); r(2, 5, 8, 2, 5); r(3, 6, 7, 3, 4); one(4, 6.5, 3.5);
+  }) },
+  { id: 'pyramid', name: 'Pyramide', desc: '108 Steine · Mittel', pos: mk(r => {
+    r(0, 0, 9, 0, 5); r(1, 1, 8, 1, 4); r(2, 2, 7, 2, 3); r(3, 3, 6, 2.5, 2.5);
+  }) },
+  { id: 'fortress', name: 'Festung', desc: '96 Steine · Knifflig', pos: mk((r, one) => {
+    r(0, 0, 11, 0, 0); r(0, 0, 11, 7, 7); r(0, 0, 0, 1, 6); r(0, 11, 11, 1, 6);
+    r(0, 3, 8, 2, 5);
+    r(1, 0, 1, 0, 0); r(1, 10, 11, 0, 0); r(1, 0, 1, 7, 7); r(1, 10, 11, 7, 7);
+    r(1, 4, 7, 2, 5); r(2, 5, 6, 2.5, 4.5);
+    one(0, 1.5, 3.5); one(0, 9.5, 3.5);
+    r(1, 0, 0, 3, 4); r(1, 11, 11, 3, 4);
+  }) },
+  { id: 'easy', name: 'Garten', desc: '60 Steine · Entspannt', pos: mk(r => {
+    r(0, 0, 7, 0, 3); r(1, 1, 6, 0.5, 2.5); r(2, 2, 5, 1, 2); r(3, 3, 4, 1.5, 1.5);
+  }) },
+];
+const layoutById = id => LAYOUTS.find(l => l.id === id) || LAYOUTS[0];
+
+/* ---------- Tile kinds & faces ---------- */
+// 0-8 Kreise, 9-17 Bambus, 18-26 Zeichen, 27-30 Winde, 31-33 Drachen, 34-37 Blumen, 38-41 Jahreszeiten
+const matchKey = k => k < 34 ? k : (k < 38 ? 'F' : 'S');
+const CJK = "'Kaiti SC','STKaiti','Songti SC','PingFang SC','Hiragino Sans GB','Noto Serif CJK SC',serif";
+const C = { b: '#1f4fa3', g: '#17834a', r: '#c0392b', dk: '#1a2a4a' };
+function dot(x, y, r, c) {
+  return `<circle cx="${x}" cy="${y}" r="${r}" fill="${c}"/><circle cx="${x}" cy="${y}" r="${r * .66}" fill="none" stroke="#fff" stroke-width="${r * .17}"/><circle cx="${x}" cy="${y}" r="${r * .26}" fill="#fff"/>`;
+}
+const DOTS = {
+  2: [[28, 21, 'g'], [28, 57, 'b']], 3: [[14, 16, 'b'], [28, 39, 'r'], [42, 62, 'g']],
+  4: [[16, 21, 'b'], [40, 21, 'g'], [16, 57, 'g'], [40, 57, 'b']],
+  5: [[15, 17, 'b'], [41, 17, 'g'], [28, 39, 'r'], [15, 61, 'g'], [41, 61, 'b']],
+  6: [[17, 16, 'g'], [39, 16, 'g'], [17, 39, 'r'], [39, 39, 'r'], [17, 62, 'r'], [39, 62, 'r']],
+  7: [[12, 12, 'g'], [28, 22, 'g'], [44, 32, 'g'], [17, 49, 'r'], [39, 49, 'r'], [17, 66, 'r'], [39, 66, 'r']],
+  8: [[17, 11, 'b'], [39, 11, 'b'], [17, 30, 'b'], [39, 30, 'b'], [17, 49, 'b'], [39, 49, 'b'], [17, 67, 'b'], [39, 67, 'b']],
+  9: [[12, 15, 'b'], [28, 15, 'b'], [44, 15, 'b'], [12, 39, 'r'], [28, 39, 'r'], [44, 39, 'r'], [12, 63, 'g'], [28, 63, 'g'], [44, 63, 'g']],
+};
+const DOTR = { 2: 13, 3: 10.5, 4: 11, 5: 10, 6: 9.5, 7: 7.6, 8: 8, 9: 7.5 };
+function stick(x, y, h, c) {
+  const dark = c === 'r' ? '#7d231a' : c === 'b' ? '#173b7a' : '#0f5a32', col = C[c];
+  return `<rect x="${x - 3.6}" y="${y - h / 2}" width="7.2" height="${h}" rx="3.6" fill="${col}"/>` +
+    `<rect x="${x - 1.4}" y="${y - h / 2 + 2}" width="1.4" height="${h - 4}" rx=".7" fill="#fff" opacity=".45"/>` +
+    [-h / 2 + 1.5, 0, h / 2 - 1.5].map(o => `<rect x="${x - 4.6}" y="${y + o - 1.2}" width="9.2" height="2.4" rx="1.2" fill="${dark}"/>`).join('');
+}
+const BAM = {
+  2: [[28, 22], [28, 56]], 3: [[28, 22], [17, 56], [39, 56]], 4: [[18, 22], [38, 22], [18, 56], [38, 56]],
+  5: [[13, 22], [43, 22], [28, 39, 'r'], [13, 56], [43, 56]], 6: [[14, 22], [28, 22], [42, 22], [14, 56], [28, 56], [42, 56]],
+  8: [[10, 22], [22, 22, 'b'], [34, 22, 'b'], [46, 22], [10, 56], [22, 56, 'b'], [34, 56, 'b'], [46, 56]],
+};
+const NUM = ['一', '二', '三', '四', '五', '六', '七', '八', '九'];
+const WINDS = [['東', 'O'], ['南', 'S'], ['西', 'W'], ['北', 'N']];
+const FLOWERS = [['🌸', 'Blume'], ['🌺', 'Blume'], ['🌼', 'Blume'], ['🌷', 'Blume']];
+const SEASONS = [['🌱', 'Frühling'], ['☀️', 'Sommer'], ['🍂', 'Herbst'], ['❄️', 'Winter']];
+const idx = t => `<text x="5" y="11" font-size="10" font-weight="700" fill="#9a8a6a" font-family="-apple-system,sans-serif">${t}</text>`;
+function faceSvg(k) {
+  let s = '';
+  if (k < 9) { const n = k + 1;
+    if (n === 1) s = `<circle cx="28" cy="39" r="22" fill="${C.g}"/><circle cx="28" cy="39" r="18" fill="#fff"/><circle cx="28" cy="39" r="16" fill="${C.r}"/>` +
+      Array.from({ length: 10 }, (_, i) => { const a = i / 10 * Math.PI * 2; return `<circle cx="${28 + Math.cos(a) * 12}" cy="${39 + Math.sin(a) * 12}" r="2.2" fill="#fff"/>`; }).join('') +
+      `<circle cx="28" cy="39" r="7" fill="#fff"/><circle cx="28" cy="39" r="4.5" fill="${C.b}"/>`;
+    else s = DOTS[n].map(([x, y, c]) => dot(x, y, DOTR[n], C[c])).join('');
+  } else if (k < 18) { const n = k - 8;
+    if (n === 1) s = `<path d="M28 72 C27 50 29 30 28 10" stroke="${C.g}" stroke-width="6" fill="none" stroke-linecap="round"/>` +
+      [22, 38, 54].map(y => `<rect x="23" y="${y}" width="10" height="2.6" rx="1.3" fill="#0f5a32"/>`).join('') +
+      `<path d="M28 30 q-16 -4 -20 -16 q14 2 20 14z M28 46 q16 -4 21 -15 q-15 1 -21 13z M28 60 q-15 0 -19 -9 q13 -1 19 7z" fill="#2aa15f"/>` +
+      `<circle cx="28" cy="10" r="6" fill="${C.r}"/><circle cx="26" cy="8" r="2" fill="#fff" opacity=".6"/>`;
+    else if (n === 7) s = stick(28, 13, 18, 'r') + [[14, 40], [28, 40], [42, 40], [14, 64], [28, 64], [42, 64]].map(([x, y]) => stick(x, y, 20, 'g')).join('');
+    else if (n === 9) s = [14, 39, 64].map(y => [14, 28, 42].map(x => stick(x, y, 21, x === 28 ? 'r' : 'g')).join('')).join('');
+    else s = BAM[n].map(([x, y, c]) => stick(x, y, 28, c || 'g')).join('');
+  } else if (k < 27) { const n = k - 17;
+    s = idx(n) + `<text x="28" y="33" font-size="27" font-weight="700" text-anchor="middle" fill="#1a2f6b" font-family="${CJK}">${NUM[n - 1]}</text>` +
+      `<text x="28" y="68" font-size="31" font-weight="700" text-anchor="middle" fill="${C.r}" font-family="${CJK}">萬</text>`;
+  } else if (k < 31) { const [ch, l] = WINDS[k - 27];
+    s = idx(l) + `<text x="28" y="54" font-size="42" font-weight="700" text-anchor="middle" fill="${C.dk}" font-family="${CJK}">${ch}</text>`;
+  } else if (k === 31) s = `<text x="28" y="56" font-size="46" font-weight="700" text-anchor="middle" fill="${C.r}" font-family="${CJK}">中</text>`;
+  else if (k === 32) s = `<text x="28" y="55" font-size="42" font-weight="700" text-anchor="middle" fill="${C.g}" font-family="${CJK}">發</text>`;
+  else if (k === 33) s = `<rect x="9" y="11" width="38" height="56" rx="5" fill="none" stroke="${C.b}" stroke-width="4"/><rect x="15.5" y="17.5" width="25" height="43" rx="2" fill="none" stroke="${C.b}" stroke-width="1.6"/>`;
+  else { const [e, l] = k < 38 ? FLOWERS[k - 34] : SEASONS[k - 38]; const col = k < 38 ? '#b0477a' : '#2f7a4a';
+    s = `<text x="28" y="48" font-size="32" text-anchor="middle">${e}</text><text x="28" y="70" font-size="10.5" font-weight="700" text-anchor="middle" fill="${col}" font-family="-apple-system,sans-serif">${l}</text>`;
+  }
+  return `<svg viewBox="0 0 56 78" xmlns="http://www.w3.org/2000/svg">${s}</svg>`;
+}
+const FACES = Array.from({ length: 42 }, (_, k) => faceSvg(k));
+
+/* ---------- Board logic ---------- */
+function buildNb(P) {
+  const R = P.map(() => ({ up: [], l: [], r: [] }));
+  for (let i = 0; i < P.length; i++) for (let j = 0; j < P.length; j++) {
+    if (i === j) continue; const a = P[i], b = P[j], dx = b.x2 - a.x2, dy = b.y2 - a.y2;
+    if (b.z > a.z && Math.abs(dx) < 2 && Math.abs(dy) < 2) R[i].up.push(j);
+    else if (b.z === a.z && Math.abs(dy) < 2) { if (dx === -2) R[i].l.push(j); else if (dx === 2) R[i].r.push(j); }
+  }
+  return R;
+}
+const freeAt = (i, gone, R) => { const r = R[i]; return r.up.every(j => gone[j]) && (r.l.every(j => gone[j]) || r.r.every(j => gone[j])); };
+
+// Verteilt Paare so, dass das Spiel garantiert lösbar ist: wir "spielen rückwärts" vom vollen Brett.
+function generate(P, pairs, R) {
+  for (let attempt = 0; attempt < 400; attempt++) {
+    const gone = new Array(P.length).fill(false), out = new Array(P.length), order = shuffle(pairs.slice());
+    let ok = true;
+    for (const pr of order) {
+      const free = []; for (let i = 0; i < P.length; i++) if (!gone[i] && freeAt(i, gone, R)) free.push(i);
+      if (free.length < 2) { ok = false; break; }
+      const a = free.splice(rnd(free.length), 1)[0], b = free[rnd(free.length)];
+      gone[a] = gone[b] = true; out[a] = pr[0]; out[b] = pr[1];
+    }
+    if (ok) return out;
+  }
+  return null;
+}
+function pairPool() {
+  const p = [];
+  for (let k = 0; k < 34; k++) p.push([k, k], [k, k]);
+  p.push([34, 35], [36, 37], [38, 39], [40, 41]);
+  return shuffle(p);
+}
+
+/* ---------- State ---------- */
+let S = null, NB = [], els = [], sel = null, busy = false;
+const prefs = Object.assign({ sound: true, hl: true, theme: 'jade' }, load('mj_prefs') || {});
+const stats = Object.assign({ won: {}, best: {} }, load('mj_stats') || {});
+function load(k) { try { return JSON.parse(localStorage.getItem(k)); } catch (e) { return null; } }
+function store(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} }
+const save = () => S && store('mj_state', S);
+const goneArr = () => S.tiles.map(t => t.gone);
+const isFree = id => freeAt(id, goneArr(), NB);
+
+function newGame(layoutId) {
+  const L = layoutById(layoutId), P = L.pos, R = buildNb(P);
+  const pairs = pairPool().slice(0, P.length / 2);
+  const ks = generate(P, pairs, R) || shuffle(pairs.flat());
+  S = { layout: L.id, tiles: P.map((p, i) => ({ id: i, x2: p.x2, y2: p.y2, z: p.z, k: ks[i], gone: false })), hist: [], time: 0, done: false };
+  NB = R; sel = null;
+  render(true); save();
+}
+
+/* ---------- Rendering ---------- */
+const board = $('#board'), stage = $('#stage');
+let bounds = { w: 0, h: 0 };
+function tilePos(t) { return { x: t.x2 * HW - t.z * LZ, y: t.y2 * HH - t.z * LZ }; }
+function render(deal) {
+  board.innerHTML = ''; els = [];
+  let minX = 1e9, minY = 1e9, maxX = -1e9, maxY = -1e9;
+  S.tiles.forEach(t => { const p = tilePos(t); minX = Math.min(minX, p.x); minY = Math.min(minY, p.y); maxX = Math.max(maxX, p.x + W + DEPTH); maxY = Math.max(maxY, p.y + H + DEPTH); });
+  bounds = { w: maxX - minX, h: maxY - minY };
+  S.tiles.forEach(t => {
+    const p = tilePos(t), el = document.createElement('div');
+    el.className = 'tile'; el.dataset.id = t.id;
+    el.style.left = (p.x - minX) + 'px'; el.style.top = (p.y - minY) + 'px';
+    el.style.zIndex = t.z * 1000 + t.x2 + t.y2;
+    el.innerHTML = `<div class="face">${FACES[t.k]}</div>`;
+    if (t.gone) el.style.display = 'none';
+    board.appendChild(el); els[t.id] = el;
+  });
+  fit(); refresh();
+  if (deal) {
+    const order = S.tiles.slice().sort((a, b) => a.z - b.z || a.y2 - b.y2 || a.x2 - b.x2);
+    order.forEach((t, i) => els[t.id].animate([
+      { transform: `translate(${(Math.random() - .5) * 200}px,${-500 - Math.random() * 300}px) rotate(${(Math.random() - .5) * 60}deg)`, opacity: 0 },
+      { opacity: 1, offset: .4 },
+      { transform: 'none', opacity: 1 }
+    ], { duration: 650, delay: i * 7, easing: 'cubic-bezier(.2,.9,.3,1.15)', fill: 'backwards' }));
+  }
+}
+function fit() {
+  const top = $('header').getBoundingClientRect().height;
+  const aw = innerWidth - 24, ah = innerHeight - top - 16;
+  const s = Math.min(aw / bounds.w, ah / bounds.h, 1.7);
+  const ox = (innerWidth - bounds.w * s) / 2, oy = top + (ah - bounds.h * s) / 2 + 4;
+  board.style.transform = `translate(${ox}px,${oy}px) scale(${s})`;
+}
+addEventListener('resize', () => S && fit());
+
+function availablePairs() {
+  const g = goneArr(), by = {};
+  S.tiles.forEach(t => { if (!t.gone && freeAt(t.id, g, NB)) (by[matchKey(t.k)] = by[matchKey(t.k)] || []).push(t.id); });
+  let count = 0; const list = [];
+  for (const k in by) { const a = by[k]; count += a.length * (a.length - 1) / 2; for (let i = 0; i < a.length; i++) for (let j = i + 1; j < a.length; j++) list.push([a[i], a[j]]); }
+  return { count, list };
+}
+function refresh() {
+  const g = goneArr();
+  S.tiles.forEach(t => { if (!t.gone) els[t.id].classList.toggle('blocked', !freeAt(t.id, g, NB)); });
+  const left = S.tiles.filter(t => !t.gone).length, av = availablePairs();
+  $('#sLeft').textContent = left; $('#sPairs').textContent = av.count;
+  $('#bUndo').disabled = !S.hist.length;
+  return { left, av };
+}
+const fmt = s => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
+setInterval(() => {
+  if (!S || S.done || document.hidden || document.querySelector('.overlay')) return;
+  S.time++; $('#sTime').textContent = fmt(S.time);
+  if (S.time % 5 === 0) save();
+}, 1000);
+
+/* ---------- Interaction ---------- */
+board.addEventListener('pointerdown', e => {
+  const el = e.target.closest('.tile'); if (!el || busy) return;
+  audio.unlock(); tap(+el.dataset.id);
+});
+function tap(id) {
+  const t = S.tiles[id];
+  if (t.gone) return;
+  if (!isFree(id)) {
+    els[id].classList.remove('shake'); void els[id].offsetWidth; els[id].classList.add('shake');
+    audio.play('no'); return;
+  }
+  if (sel === null) { select(id); return; }
+  if (sel === id) { deselect(); audio.play('tick'); return; }
+  if (matchKey(S.tiles[sel].k) === matchKey(t.k)) { const a = sel; deselect(); removePair(a, id); }
+  else { deselect(); select(id); }
+}
+function select(id) { sel = id; els[id].classList.add('sel'); audio.play('tick'); }
+function deselect() { if (sel !== null && els[sel]) els[sel].classList.remove('sel'); sel = null; }
+
+function removePair(a, b) {
+  S.tiles[a].gone = S.tiles[b].gone = true;
+  S.hist.push({ t: 'm', a, b });
+  audio.play('match');
+  const ea = els[a], eb = els[b];
+  const ca = center(ea), cb = center(eb), mx = (ca.x + cb.x) / 2, my = (ca.y + cb.y) / 2;
+  [[ea, ca], [eb, cb]].forEach(([el, c]) => {
+    el.classList.remove('hint'); el.style.zIndex = 90000;
+    const dx = mx - c.x, dy = my - c.y;
+    el.animate([
+      { transform: 'translate(0,-6px) scale(1)', opacity: 1 },
+      { transform: `translate(${dx * .35}px,${dy * .35 - 40}px) scale(1.15) rotate(${dx > 0 ? 6 : -6}deg)`, opacity: 1, offset: .45 },
+      { transform: `translate(${dx}px,${dy - 20}px) scale(.25) rotate(${dx > 0 ? 20 : -20}deg)`, opacity: 0 }
+    ], { duration: 560, easing: 'cubic-bezier(.4,0,.6,1)' }).onfinish = () => { el.style.display = 'none'; el.style.zIndex = S.tiles[+el.dataset.id].z * 1000 + S.tiles[+el.dataset.id].x2 + S.tiles[+el.dataset.id].y2; };
+  });
+  setTimeout(() => burst(mx, my - 20), 470);
+  afterMove();
+}
+function center(el) { return { x: el.offsetLeft + W / 2, y: el.offsetTop + H / 2 }; }
+function burst(x, y) {
+  const ring = document.createElement('div'); ring.className = 'ring'; ring.style.left = x + 'px'; ring.style.top = y + 'px'; board.appendChild(ring);
+  ring.animate([{ transform: 'scale(.2)', opacity: 1 }, { transform: 'scale(1.6)', opacity: 0 }], { duration: 500, easing: 'ease-out' }).onfinish = () => ring.remove();
+  for (let i = 0; i < 12; i++) {
+    const s = document.createElement('div'); s.className = 'spark'; s.textContent = i % 3 ? '✦' : '●';
+    s.style.left = x + 'px'; s.style.top = y + 'px'; if (i % 3 === 0) s.style.fontSize = '8px';
+    board.appendChild(s);
+    const a = i / 12 * Math.PI * 2 + Math.random() * .4, d = 50 + Math.random() * 50;
+    s.animate([{ transform: 'translate(0,0) scale(1.2)', opacity: 1 }, { transform: `translate(${Math.cos(a) * d}px,${Math.sin(a) * d}px) scale(.2) rotate(180deg)`, opacity: 0 }],
+      { duration: 600 + Math.random() * 300, easing: 'cubic-bezier(.1,.8,.3,1)' }).onfinish = () => s.remove();
+  }
+}
+function afterMove() {
+  const { left, av } = refresh(); save();
+  if (left === 0) { win(); return; }
+  if (av.count === 0) setTimeout(stuck, 700);
+}
+
+function undo() {
+  if (busy) return;
+  const h = S.hist.pop(); if (!h) return;
+  deselect(); S.done = false;
+  if (h.t === 'm') {
+    [h.a, h.b].forEach(id => {
+      S.tiles[id].gone = false; const el = els[id]; el.style.display = '';
+      el.animate([{ transform: 'translateY(-30px) scale(.4)', opacity: 0 }, { transform: 'none', opacity: 1 }], { duration: 380, easing: 'cubic-bezier(.2,1.4,.4,1)' });
+    });
+  } else {
+    flipTo(h.prev);
+  }
+  audio.play('tick'); refresh(); save();
+}
+function flipTo(map) {
+  busy = true;
+  Object.keys(map).forEach((id, i) => {
+    const el = els[id];
+    el.animate([{ transform: 'none' }, { transform: 'scaleX(0) translateY(-10px)' }], { duration: 220, delay: i * 4, easing: 'ease-in', fill: 'forwards' }).onfinish = anim => {
+      S.tiles[id].k = map[id]; el.querySelector('.face').innerHTML = FACES[map[id]];
+      el.getAnimations().forEach(a => a.cancel());
+      el.animate([{ transform: 'scaleX(0) translateY(-10px)' }, { transform: 'none' }], { duration: 260, easing: 'cubic-bezier(.2,1.4,.4,1)' });
+    };
+  });
+  setTimeout(() => { busy = false; refresh(); save(); }, 260 + Object.keys(map).length * 4 + 300);
+}
+function reshuffle() {
+  if (busy) return;
+  deselect();
+  const rem = S.tiles.filter(t => !t.gone); if (rem.length < 2) return;
+  const P = rem.map(t => ({ x2: t.x2, y2: t.y2, z: t.z })), R = buildNb(P), groups = {};
+  rem.forEach(t => (groups[matchKey(t.k)] = groups[matchKey(t.k)] || []).push(t.k));
+  const pairs = []; for (const g in groups) { const a = shuffle(groups[g]); for (let i = 0; i < a.length; i += 2) pairs.push([a[i], a[i + 1]]); }
+  const ks = generate(P, pairs, R) || shuffle(pairs.flat());
+  const prev = {}, next = {}; rem.forEach((t, i) => { prev[t.id] = t.k; next[t.id] = ks[i]; });
+  S.hist.push({ t: 's', prev });
+  audio.play('shuffle'); flipTo(next);
+  setTimeout(() => { const { av } = refresh(); if (av.count === 0 && rem.length) stuck(); }, 900);
+}
+function hint() {
+  if (busy) return;
+  const { list } = availablePairs();
+  if (!list.length) { stuck(); return; }
+  const [a, b] = list[rnd(list.length)];
+  [a, b].forEach(id => { const el = els[id]; el.classList.remove('hint'); void el.offsetWidth; el.classList.add('hint'); });
+  audio.play('hint');
+}
+
+/* ---------- Dialogs ---------- */
+function modal(html, setup) {
+  const o = document.createElement('div'); o.className = 'overlay';
+  o.innerHTML = `<div class="card">${html}</div>`; document.body.appendChild(o);
+  const close = () => { o.classList.add('out'); setTimeout(() => o.remove(), 200); };
+  o.addEventListener('pointerdown', e => { if (e.target === o) close(); });
+  setup && setup(o, close);
+  return close;
+}
+function previewSvg(P) {
+  let mx = 0, my = 0; P.forEach(p => { mx = Math.max(mx, p.x2); my = Math.max(my, p.y2); });
+  const w = mx * 8 + 30, h = my * 10.5 + 34;
+  const r = P.slice().sort((a, b) => a.z - b.z || a.x2 + a.y2 - b.x2 - b.y2).map(p =>
+    `<rect x="${p.x2 * 8 - p.z * 2.5 + 6}" y="${p.y2 * 10.5 - p.z * 2.5 + 8}" width="15" height="20" rx="2.5" fill="hsl(40,${50 - p.z * 4}%,${94 - p.z * 7}%)" stroke="#8a7a58" stroke-width="1"/>`).join('');
+  return `<svg viewBox="0 0 ${w} ${h}" preserveAspectRatio="xMidYMid meet">${r}</svg>`;
+}
+function newDialog() {
+  const cards = LAYOUTS.map(l => `<div class="lay ${S && S.layout === l.id ? 'cur' : ''}" data-id="${l.id}">${previewSvg(l.pos)}<b>${l.name}</b><small>${l.desc}${stats.best[l.id] ? ' · Rekord ' + fmt(stats.best[l.id]) : ''}</small></div>`).join('');
+  modal(`<h2>Neues Spiel</h2><p>Welches Spielfeld möchtest du spielen?</p><div class="layouts">${cards}</div>
+    <div class="row"><button class="pbtn" data-x>Abbrechen</button></div>`, (o, close) => {
+    o.querySelectorAll('.lay').forEach(c => c.addEventListener('click', () => { close(); setTimeout(() => newGame(c.dataset.id), 150); }));
+    o.querySelector('[data-x]').onclick = close;
+  });
+}
+function settingsDialog() {
+  const themes = [['jade', '#17644e'], ['blue', '#2459a0'], ['red', '#8a2433'], ['wood', '#8a5a2b']];
+  const total = Object.values(stats.won).reduce((a, b) => a + b, 0);
+  modal(`<h2>Optionen</h2>
+    <div class="set">Töne<div class="sw ${prefs.sound ? 'on' : ''}" data-p="sound"></div></div>
+    <div class="set">Blockierte Steine abdunkeln<div class="sw ${prefs.hl ? 'on' : ''}" data-p="hl"></div></div>
+    <div class="set">Hintergrund<div class="swatches">${themes.map(([n, c]) => `<div class="swatch ${prefs.theme === n ? 'cur' : ''}" data-t="${n}" style="background:${c}"></div>`).join('')}</div></div>
+    <h2 style="margin-top:22px;font-size:24px">So wird gespielt</h2>
+    <p>Tippe nacheinander zwei <b>gleiche</b> Steine an – sie verschwinden. Ziel ist es, alle Steine abzuräumen.</p>
+    <p>Ein Stein ist nur <b>frei</b>, wenn kein anderer Stein auf ihm liegt und er links <i>oder</i> rechts nicht eingeklemmt ist.</p>
+    <p>Alle <b>Blumen</b> passen zueinander, ebenso alle <b>Jahreszeiten</b>. Jedes neue Spiel ist garantiert lösbar.</p>
+    <p style="color:#7a6c55">Gewonnene Spiele: <b>${total}</b></p>
+    <div class="row"><button class="pbtn primary" data-x>Fertig</button></div>`, (o, close) => {
+    o.querySelectorAll('.sw').forEach(sw => sw.onclick = () => { const p = sw.dataset.p; prefs[p] = !prefs[p]; sw.classList.toggle('on', prefs[p]); applyPrefs(); });
+    o.querySelectorAll('.swatch').forEach(s => s.onclick = () => { prefs.theme = s.dataset.t; o.querySelectorAll('.swatch').forEach(x => x.classList.toggle('cur', x === s)); applyPrefs(); });
+    o.querySelector('[data-x]').onclick = close;
+  });
+}
+function applyPrefs() {
+  document.body.className = (prefs.hl ? 'hl ' : '') + (prefs.theme !== 'jade' ? 'theme-' + prefs.theme : '');
+  store('mj_prefs', prefs);
+}
+let stuckOpen = false;
+function stuck() {
+  if (stuckOpen || !S || S.done || availablePairs().count > 0) return;
+  stuckOpen = true;
+  modal(`<div class="big">🤔</div><h2 style="text-align:center">Keine Paare mehr frei</h2>
+    <p style="text-align:center">Du kannst die restlichen Steine neu mischen oder deinen letzten Zug zurücknehmen.</p>
+    <div class="row" style="justify-content:center"><button class="pbtn" data-u>Zurück</button><button class="pbtn" data-n>Neues Spiel</button><button class="pbtn primary" data-s>Mischen</button></div>`, (o, close) => {
+    const c = () => { stuckOpen = false; close(); };
+    o.querySelector('[data-u]').onclick = () => { c(); undo(); };
+    o.querySelector('[data-n]').onclick = () => { c(); setTimeout(newDialog, 220); };
+    o.querySelector('[data-s]').onclick = () => { c(); setTimeout(reshuffle, 200); };
+    o.addEventListener('pointerdown', e => { if (e.target === o) stuckOpen = false; });
+  });
+}
+function win() {
+  S.done = true;
+  stats.won[S.layout] = (stats.won[S.layout] || 0) + 1;
+  const rec = !stats.best[S.layout] || S.time < stats.best[S.layout];
+  if (rec) stats.best[S.layout] = S.time;
+  store('mj_stats', stats); save();
+  setTimeout(() => { audio.play('win'); confetti(); }, 500);
+  setTimeout(() => modal(`<div class="big">🎉</div><h2 style="text-align:center">Geschafft!</h2>
+    <p style="text-align:center;font-size:20px">Alle Steine abgeräumt in <b>${fmt(S.time)}</b>.${rec ? '<br>✨ Neuer Rekord! ✨' : ''}</p>
+    <div class="row" style="justify-content:center"><button class="pbtn" data-l>Anderes Spielfeld</button><button class="pbtn primary" data-n>Nochmal spielen</button></div>`, (o, close) => {
+    o.querySelector('[data-n]').onclick = () => { close(); setTimeout(() => newGame(S.layout), 200); };
+    o.querySelector('[data-l]').onclick = () => { close(); setTimeout(newDialog, 220); };
+  }), 1600);
+}
+function confetti() {
+  const c = document.createElement('canvas'); c.className = 'confetti'; document.body.appendChild(c);
+  const dpr = devicePixelRatio || 1, w = innerWidth, h = innerHeight; c.width = w * dpr; c.height = h * dpr;
+  const ctx = c.getContext('2d'); ctx.scale(dpr, dpr);
+  const cols = ['#ffd34d', '#ff6b6b', '#4ecdc4', '#a78bfa', '#ffffff', '#7bd88f', '#ff9f43'], P = [];
+  const shoot = (x, dir) => { for (let i = 0; i < 120; i++) P.push({ x, y: h, vx: dir * (4 + Math.random() * 12) + (Math.random() - .5) * 4, vy: -(14 + Math.random() * 14), s: 7 + Math.random() * 8, r: Math.random() * 6, vr: (Math.random() - .5) * .4, c: cols[rnd(cols.length)] }); };
+  shoot(0, 1); shoot(w, -1); setTimeout(() => { shoot(w * .3, .3); shoot(w * .7, -.3); }, 500);
+  const t0 = performance.now();
+  (function f(t) {
+    ctx.clearRect(0, 0, w, h);
+    P.forEach(p => { p.vy += .38; p.vx *= .985; p.vy *= .99; p.x += p.vx; p.y += p.vy; p.r += p.vr;
+      ctx.save(); ctx.translate(p.x, p.y); ctx.rotate(p.r); ctx.scale(1, Math.cos(p.r * 2)); ctx.fillStyle = p.c; ctx.fillRect(-p.s / 2, -p.s / 3, p.s, p.s / 1.5); ctx.restore(); });
+    if (t - t0 < 5000) requestAnimationFrame(f); else c.remove();
+  })(t0);
+}
+
+/* ---------- Sound ---------- */
+const audio = {
+  ctx: null,
+  unlock() { if (!this.ctx) { try { this.ctx = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) {} } if (this.ctx && this.ctx.state === 'suspended') this.ctx.resume(); },
+  tone(f, t0, dur, type = 'sine', vol = .15) {
+    const c = this.ctx, o = c.createOscillator(), g = c.createGain(); o.type = type; o.frequency.value = f;
+    g.gain.setValueAtTime(0, c.currentTime + t0); g.gain.linearRampToValueAtTime(vol, c.currentTime + t0 + .01);
+    g.gain.exponentialRampToValueAtTime(.0001, c.currentTime + t0 + dur);
+    o.connect(g).connect(c.destination); o.start(c.currentTime + t0); o.stop(c.currentTime + t0 + dur + .05);
+  },
+  play(n) {
+    if (!prefs.sound || !this.ctx) return;
+    if (n === 'tick') { this.tone(1300, 0, .06, 'triangle', .12); this.tone(2600, 0, .03, 'sine', .04); }
+    else if (n === 'match') { this.tone(784, 0, .35, 'sine', .14); this.tone(1175, .09, .45, 'sine', .12); this.tone(1568, .18, .5, 'triangle', .05); }
+    else if (n === 'no') { this.tone(220, 0, .14, 'triangle', .14); this.tone(180, .07, .16, 'triangle', .1); }
+    else if (n === 'hint') { this.tone(1046, 0, .3, 'sine', .1); this.tone(1318, .12, .35, 'sine', .08); }
+    else if (n === 'shuffle') { for (let i = 0; i < 8; i++) this.tone(600 + rnd(900), i * .04, .06, 'triangle', .06); }
+    else if (n === 'win') { [523, 659, 784, 1046, 1318].forEach((f, i) => this.tone(f, i * .12, .6, 'sine', .13)); }
+  }
+};
+
+/* ---------- Wiring ---------- */
+$('#bNew').onclick = newDialog;
+$('#bUndo').onclick = undo;
+$('#bHint').onclick = () => { audio.unlock(); hint(); };
+$('#bShuffle').onclick = () => { audio.unlock(); reshuffle(); };
+$('#bSet').onclick = settingsDialog;
+document.addEventListener('gesturestart', e => e.preventDefault());
+document.addEventListener('visibilitychange', () => document.hidden && save());
+
+applyPrefs();
+const saved = load('mj_state');
+if (saved && saved.tiles && !saved.done && saved.tiles.some(t => !t.gone)) {
+  S = saved; NB = buildNb(S.tiles); render(false); $('#sTime').textContent = fmt(S.time);
+} else newGame(saved && saved.layout || 'turtle');
+if ('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('sw.js').catch(() => {});
+})();
+</script>
+</body>
+</html>
