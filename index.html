@@ -34,6 +34,13 @@ body.collapsed header{transform:translateY(-110%);opacity:0;pointer-events:none}
 #bShow svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:2.2;stroke-linecap:round}
 body.collapsed #bShow{opacity:.8;transform:none;pointer-events:auto}
 #bShow:active{transform:scale(.94)}
+#bHintFloat{position:fixed;top:calc(env(safe-area-inset-top) + 10px);right:calc(env(safe-area-inset-right) + 14px);z-index:11;height:44px;padding:0 16px 0 12px;
+  display:flex;align-items:center;gap:6px;border-radius:22px;border:1px solid rgba(255,255,255,.22);background:rgba(0,0,0,.3);color:#fff;
+  font:600 16px/1 -apple-system,system-ui,sans-serif;-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);cursor:pointer;
+  opacity:0;transform:translateY(-12px);pointer-events:none;transition:opacity .3s .2s,transform .35s .2s}
+#bHintFloat svg{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+body.collapsed #bHintFloat{opacity:.85;transform:none;pointer-events:auto}
+#bHintFloat:active{transform:scale(.94)}
 .brand{font-family:"Iowan Old Style","Palatino",Georgia,serif;font-size:26px;font-weight:700;letter-spacing:.5px;display:flex;align-items:center;gap:10px;white-space:nowrap;text-shadow:0 2px 8px rgba(0,0,0,.4)}
 .brand .seal{display:inline-grid;place-items:center;width:40px;height:40px;border-radius:10px;background:linear-gradient(145deg,#d8433a,#9b1d16);font-family:"Kaiti SC","STKaiti","Songti SC","PingFang SC",serif;font-size:24px;box-shadow:0 3px 10px rgba(0,0,0,.35),inset 0 1px 0 rgba(255,255,255,.3)}
 .stats{display:flex;gap:8px;flex:1;justify-content:center}
@@ -131,6 +138,7 @@ body.hl .tile.blocked::after{background:rgba(45,28,0,.3)}
     <button class="btn" id="bHide"><svg viewBox="0 0 24 24"><path d="m18 15-6-6-6 6"/></svg><span>Einklappen</span></button>
   </div>
 </header>
+<button id="bHintFloat" aria-label="Tipp"><svg viewBox="0 0 24 24"><path d="M15 14c.2-1 .7-1.7 1.5-2.5 1-.9 1.5-2.2 1.5-3.5A6 6 0 0 0 6 8c0 1 .2 2.2 1.5 3.5.7.7 1.3 1.5 1.5 2.5"/><path d="M9 18h6M10 22h4"/></svg>Tipp</button>
 <button id="bShow" aria-label="Menü zeigen"><svg viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h16"/></svg>Menü</button>
 <div class="edition">Wiese Edition</div>
 <div id="stage"><div id="board"></div></div>
@@ -316,16 +324,21 @@ function render(deal) {
 // Passt das Spielfeld an die noch liegenden Steine an – wird es kleiner, zoomt die Ansicht langsam heran.
 function fit(instant) {
   const hdr = $('header'), safeTop = parseFloat(getComputedStyle(hdr).paddingTop) - 10;
-  const top = prefs.collapsed ? safeTop + 12 : hdr.getBoundingClientRect().height;
   let x0 = 1e9, y0 = 1e9, x1 = -1e9, y1 = -1e9;
-  S.tiles.forEach(t => {
-    if (t.gone) return; const el = els[t.id], x = parseFloat(el.style.left), y = parseFloat(el.style.top);
-    x0 = Math.min(x0, x); y0 = Math.min(y0, y); x1 = Math.max(x1, x + W + DEPTH); y1 = Math.max(y1, y + H + DEPTH);
-  });
-  if (x0 > x1) return;
-  const bw = x1 - x0, bh = y1 - y0, aw = innerWidth - 24, ah = innerHeight - top - 36;
-  const s = Math.min(aw / bw, ah / bh, 2);
-  const ox = (innerWidth - bw * s) / 2 - x0 * s, oy = top + (ah - bh * s) / 2 + 4 - y0 * s;
+  const live = S.tiles.filter(t => !t.gone).map(t => ({ x: parseFloat(els[t.id].style.left), y: parseFloat(els[t.id].style.top) }));
+  live.forEach(p => { x0 = Math.min(x0, p.x); y0 = Math.min(y0, p.y); x1 = Math.max(x1, p.x + W + DEPTH); y1 = Math.max(y1, p.y + H + DEPTH); });
+  if (!live.length) return;
+  const bw = x1 - x0, bh = y1 - y0, aw = innerWidth - 24;
+  const place = top => {
+    const ah = innerHeight - top - 36, s = Math.min(aw / bw, ah / bh, 2);
+    return { s, ox: (innerWidth - bw * s) / 2 - x0 * s, oy: top + (ah - bh * s) / 2 + 4 - y0 * s };
+  };
+  let { s, ox, oy } = place(prefs.collapsed ? safeTop + 12 : hdr.getBoundingClientRect().height);
+  if (prefs.collapsed) {
+    // Liegt ein Stein unter dem schwebenden Tipp-Knopf oben rechts? Dann Spielfeld etwas tiefer setzen.
+    const b = $('#bHintFloat'), bx = innerWidth - 14 - b.offsetWidth - 8, by = safeTop + 10 + b.offsetHeight + 8;
+    if (live.some(p => ox + (p.x + W + DEPTH) * s > bx && oy + p.y * s < by)) ({ s, ox, oy } = place(by));
+  }
   board.style.transition = instant ? 'none' : 'transform 1.6s cubic-bezier(.45,0,.2,1)';
   board.style.transform = `translate(${ox}px,${oy}px) scale(${s})`;
 }
@@ -621,6 +634,7 @@ $('#bShuffle').onclick = () => { audio.unlock(); reshuffle(); };
 $('#bSet').onclick = settingsDialog;
 $('#bHide').onclick = toggleMenu;
 $('#bShow').onclick = toggleMenu;
+$('#bHintFloat').onclick = () => { audio.unlock(); hint(); };
 document.addEventListener('gesturestart', e => e.preventDefault());
 document.addEventListener('visibilitychange', () => document.hidden && save());
 
