@@ -25,6 +25,15 @@ body{font-family:-apple-system,"SF Pro Rounded",system-ui,"Segoe UI",sans-serif;
 header{position:fixed;top:0;left:0;right:0;z-index:10;display:flex;align-items:center;gap:12px;
   padding:calc(env(safe-area-inset-top) + 10px) calc(env(safe-area-inset-right) + 16px) 10px calc(env(safe-area-inset-left) + 16px);
   background:linear-gradient(rgba(0,0,0,.35),rgba(0,0,0,0))}
+header{transition:transform .45s cubic-bezier(.4,0,.2,1),opacity .3s}
+body.collapsed header{transform:translateY(-110%);opacity:0;pointer-events:none}
+#bShow{position:fixed;left:calc(env(safe-area-inset-left) + 14px);bottom:calc(env(safe-area-inset-bottom) + 4px);z-index:11;height:30px;padding:0 12px 0 9px;
+  display:flex;align-items:center;gap:6px;border-radius:15px;border:1px solid rgba(255,255,255,.22);background:rgba(0,0,0,.3);color:#fff;
+  font:600 14px/1 -apple-system,system-ui,sans-serif;-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);cursor:pointer;
+  opacity:0;transform:translateY(12px);pointer-events:none;transition:opacity .3s .2s,transform .35s .2s}
+#bShow svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:2.2;stroke-linecap:round}
+body.collapsed #bShow{opacity:.8;transform:none;pointer-events:auto}
+#bShow:active{transform:scale(.94)}
 .brand{font-family:"Iowan Old Style","Palatino",Georgia,serif;font-size:26px;font-weight:700;letter-spacing:.5px;display:flex;align-items:center;gap:10px;white-space:nowrap;text-shadow:0 2px 8px rgba(0,0,0,.4)}
 .brand .seal{display:inline-grid;place-items:center;width:40px;height:40px;border-radius:10px;background:linear-gradient(145deg,#d8433a,#9b1d16);font-family:"Kaiti SC","STKaiti","Songti SC","PingFang SC",serif;font-size:24px;box-shadow:0 3px 10px rgba(0,0,0,.35),inset 0 1px 0 rgba(255,255,255,.3)}
 .stats{display:flex;gap:8px;flex:1;justify-content:center}
@@ -119,8 +128,10 @@ body.hl .tile.blocked::after{background:rgba(45,28,0,.3)}
     <button class="btn" id="bHint"><svg viewBox="0 0 24 24"><path d="M15 14c.2-1 .7-1.7 1.5-2.5 1-.9 1.5-2.2 1.5-3.5A6 6 0 0 0 6 8c0 1 .2 2.2 1.5 3.5.7.7 1.3 1.5 1.5 2.5"/><path d="M9 18h6M10 22h4"/></svg><span>Tipp</span></button>
     <button class="btn" id="bShuffle"><svg viewBox="0 0 24 24"><path d="M2 18h1.4c1.3 0 2.5-.6 3.3-1.7l6.1-8.6c.7-1.1 2-1.7 3.3-1.7H22"/><path d="m18 2 4 4-4 4M2 6h1.9c1.5 0 2.9.9 3.6 2.2M22 18h-5.9c-1.3 0-2.6-.7-3.3-1.8l-.5-.8M18 14l4 4-4 4"/></svg><span>Mischen</span></button>
     <button class="btn" id="bSet"><svg viewBox="0 0 24 24"><path d="M4 6h9M19 6h1M4 12h3M13 12h7M4 18h11M21 18h-1"/><circle cx="16" cy="6" r="2.5"/><circle cx="10" cy="12" r="2.5"/><circle cx="18" cy="18" r="2.5"/></svg><span>Optionen</span></button>
+    <button class="btn" id="bHide"><svg viewBox="0 0 24 24"><path d="m18 15-6-6-6 6"/></svg><span>Einklappen</span></button>
   </div>
 </header>
+<button id="bShow" aria-label="Menü zeigen"><svg viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h16"/></svg>Menü</button>
 <div class="edition">Wiese Edition</div>
 <div id="stage"><div id="board"></div></div>
 
@@ -292,7 +303,7 @@ function render(deal) {
     if (t.gone) el.style.display = 'none';
     board.appendChild(el); els[t.id] = el;
   });
-  fit(); refresh();
+  fit(true); refresh();
   if (deal) {
     const order = S.tiles.slice().sort((a, b) => a.z - b.z || a.y2 - b.y2 || a.x2 - b.x2);
     order.forEach((t, i) => els[t.id].animate([
@@ -302,14 +313,23 @@ function render(deal) {
     ], { duration: 650, delay: i * 7, easing: 'cubic-bezier(.2,.9,.3,1.15)', fill: 'backwards' }));
   }
 }
-function fit() {
-  const top = $('header').getBoundingClientRect().height;
-  const aw = innerWidth - 24, ah = innerHeight - top - 36;
-  const s = Math.min(aw / bounds.w, ah / bounds.h, 1.7);
-  const ox = (innerWidth - bounds.w * s) / 2, oy = top + (ah - bounds.h * s) / 2 + 4;
+// Passt das Spielfeld an die noch liegenden Steine an – wird es kleiner, zoomt die Ansicht langsam heran.
+function fit(instant) {
+  const hdr = $('header'), safeTop = parseFloat(getComputedStyle(hdr).paddingTop) - 10;
+  const top = prefs.collapsed ? safeTop + 12 : hdr.getBoundingClientRect().height;
+  let x0 = 1e9, y0 = 1e9, x1 = -1e9, y1 = -1e9;
+  S.tiles.forEach(t => {
+    if (t.gone) return; const el = els[t.id], x = parseFloat(el.style.left), y = parseFloat(el.style.top);
+    x0 = Math.min(x0, x); y0 = Math.min(y0, y); x1 = Math.max(x1, x + W + DEPTH); y1 = Math.max(y1, y + H + DEPTH);
+  });
+  if (x0 > x1) return;
+  const bw = x1 - x0, bh = y1 - y0, aw = innerWidth - 24, ah = innerHeight - top - 36;
+  const s = Math.min(aw / bw, ah / bh, 2);
+  const ox = (innerWidth - bw * s) / 2 - x0 * s, oy = top + (ah - bh * s) / 2 + 4 - y0 * s;
+  board.style.transition = instant ? 'none' : 'transform 1.6s cubic-bezier(.45,0,.2,1)';
   board.style.transform = `translate(${ox}px,${oy}px) scale(${s})`;
 }
-addEventListener('resize', () => S && fit());
+addEventListener('resize', () => S && fit(true));
 
 function availablePairs() {
   const g = goneArr(), by = {};
@@ -387,6 +407,7 @@ function burst(x, y) {
 function afterMove() {
   const { left, av } = refresh(); save();
   if (left === 0) { win(); return; }
+  setTimeout(() => fit(), 450);
   if (av.count === 0) setTimeout(stuck, 700);
 }
 
@@ -402,7 +423,7 @@ function undo() {
   } else {
     flipTo(h.prev);
   }
-  audio.play('tick'); refresh(); save();
+  audio.play('tick'); refresh(); save(); fit();
 }
 function flipTo(map) {
   busy = true;
@@ -481,8 +502,12 @@ function settingsDialog() {
   });
 }
 function applyPrefs() {
-  document.body.className = (prefs.hl ? 'hl ' : '') + (prefs.theme !== 'jade' ? 'theme-' + prefs.theme : '');
+  document.body.className = (prefs.hl ? 'hl ' : '') + (prefs.collapsed ? 'collapsed ' : '') + (prefs.theme !== 'jade' ? 'theme-' + prefs.theme : '');
   store('mj_prefs', prefs);
+}
+function toggleMenu() {
+  prefs.collapsed = !prefs.collapsed; applyPrefs();
+  if (S) fit();
 }
 let stuckOpen = false;
 function stuck() {
@@ -594,6 +619,8 @@ $('#bUndo').onclick = undo;
 $('#bHint').onclick = () => { audio.unlock(); hint(); };
 $('#bShuffle').onclick = () => { audio.unlock(); reshuffle(); };
 $('#bSet').onclick = settingsDialog;
+$('#bHide').onclick = toggleMenu;
+$('#bShow').onclick = toggleMenu;
 document.addEventListener('gesturestart', e => e.preventDefault());
 document.addEventListener('visibilitychange', () => document.hidden && save());
 
