@@ -181,7 +181,7 @@ body.hl .tile.blocked::after{background:rgba(45,28,0,.3)}
 (() => {
 'use strict';
 const W = 64, H = 86, HW = W / 2, HH = H / 2, LZ = 12, DEPTH = 12;
-const VERSION = '1.3.0'; // Major.Minor.Patch – bei jeder Änderung zusammen mit VERSION in sw.js anpassen
+const VERSION = '1.3.1'; // Major.Minor.Patch – bei jeder Änderung zusammen mit VERSION in sw.js anpassen
 const $ = s => document.querySelector(s);
 const rnd = n => Math.floor(Math.random() * n);
 const shuffle = a => { for (let i = a.length - 1; i > 0; i--) { const j = rnd(i + 1); [a[i], a[j]] = [a[j], a[i]]; } return a; };
@@ -372,7 +372,7 @@ function fit(instant) {
   if (!live.length) return;
   const bw = x1 - x0, bh = y1 - y0, aw = innerWidth - 24;
   const place = (top, bottom = 40) => {
-    const ah = innerHeight - top - bottom, s = Math.min(aw / bw, ah / bh, 2);
+    const ah = Math.max(innerHeight - top - bottom, 60), s = Math.max(Math.min(aw / bw, ah / bh, 2), .05);
     return { s, ox: (innerWidth - bw * s) / 2 - x0 * s, oy: top + (ah - bh * s) / 2 - y0 * s };
   };
   // Trifft ein Stein (samt Kante und Schatten) eines der Rechtecke [links, oben, rechts, unten]?
@@ -391,7 +391,18 @@ function fit(instant) {
   board.style.transition = instant ? 'none' : 'transform 1.6s cubic-bezier(.45,0,.2,1)';
   board.style.transform = `translate(${ox}px,${oy}px) scale(${s})`;
 }
-addEventListener('resize', () => S && fit(true));
+// Größenänderungen zuverlässig erkennen: Das "resize"-Ereignis fehlt manchmal, etwa wenn die Homescreen-App
+// startet oder aus dem Hintergrund kommt, bevor ihr Fenster die endgültige Größe hat. Dann blieb das Spielfeld winzig.
+let lastSize = '';
+function onSize() {
+  const size = innerWidth + 'x' + innerHeight; if (size === lastSize) return; lastSize = size;
+  if (S) fit(true); if (snow.on) snow.resize();
+}
+addEventListener('resize', onSize);
+addEventListener('orientationchange', () => setTimeout(onSize, 300));
+addEventListener('pageshow', onSize);
+document.addEventListener('visibilitychange', () => { if (!document.hidden) onSize(); });
+if (window.ResizeObserver) new ResizeObserver(onSize).observe(document.documentElement);
 
 function availablePairs() {
   const g = goneArr(), by = {};
@@ -410,6 +421,7 @@ function refresh() {
 }
 const fmt = s => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
 setInterval(() => {
+  onSize(); // Sicherheitsnetz, falls keines der Größen-Ereignisse kam
   if (!S || S.done || document.hidden || document.querySelector('.overlay')) return;
   S.time++; $('#sTime').textContent = fmt(S.time);
   if (S.time % 5 === 0) save();
@@ -655,7 +667,6 @@ const snow = {
     });
   }
 };
-addEventListener('resize', () => snow.on && snow.resize());
 
 /* ---------- Sound ---------- */
 const audio = {
