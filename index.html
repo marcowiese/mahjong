@@ -181,7 +181,7 @@ body.hl .tile.blocked::after{background:rgba(45,28,0,.3)}
 (() => {
 'use strict';
 const W = 64, H = 86, HW = W / 2, HH = H / 2, LZ = 12, DEPTH = 12;
-const VERSION = '1.2.1'; // Major.Minor.Patch – bei jeder Änderung zusammen mit VERSION in sw.js anpassen
+const VERSION = '1.3.0'; // Major.Minor.Patch – bei jeder Änderung zusammen mit VERSION in sw.js anpassen
 const $ = s => document.querySelector(s);
 const rnd = n => Math.floor(Math.random() * n);
 const shuffle = a => { for (let i = a.length - 1; i > 0; i--) { const j = rnd(i + 1); [a[i], a[j]] = [a[j], a[i]]; } return a; };
@@ -244,9 +244,9 @@ const NUM = ['一', '二', '三', '四', '五', '六', '七', '八', '九'];
 const WINDS = [['東', 'O'], ['南', 'S'], ['西', 'W'], ['北', 'N']];
 const FLOWERS = [['🌸', 'Blume'], ['🌺', 'Blume'], ['🌼', 'Blume'], ['🌷', 'Blume']];
 const SEASONS = [['🌱', 'Frühling'], ['☀️', 'Sommer'], ['🍂', 'Herbst'], ['❄️', 'Winter']];
-// Im Weihnachts-Thema werden Blumen und Jahreszeiten zu Weihnachts- und Wintersteinen
-const XFLOWERS = [['🎄', 'Baum'], ['⭐', 'Stern'], ['🎁', 'Geschenk'], ['🔔', 'Glocke']];
-const XSEASONS = [['⛄', 'Schneemann'], ['🕯️', 'Kerze'], ['🍪', 'Plätzchen'], ['🦌', 'Rentier']];
+// Im Weihnachts-Thema werden Blumen und Jahreszeiten zu "Drinnen" (goldener Rahmen) und "Draußen" (eisblauer Rahmen)
+const XFLOWERS = [['🎄', 'Baum'], ['🎁', 'Geschenk'], ['🕯️', 'Kerze'], ['🍪', 'Plätzchen']];
+const XSEASONS = [['⛄', 'Schneemann'], ['🦌', 'Rentier'], ['🛷', 'Schlitten'], ['❄️', 'Schnee']];
 const idx = t => `<text x="5" y="11" font-size="10" font-weight="700" fill="#9a8a6a" font-family="-apple-system,sans-serif">${t}</text>`;
 function faceSvg(k, xmas) {
   let s = '';
@@ -272,8 +272,9 @@ function faceSvg(k, xmas) {
   else if (k === 32) s = `<text x="28" y="55" font-size="42" font-weight="700" text-anchor="middle" fill="${C.g}" font-family="${CJK}">發</text>`;
   else if (k === 33) s = `<rect x="9" y="11" width="38" height="56" rx="5" fill="none" stroke="${C.b}" stroke-width="4"/><rect x="15.5" y="17.5" width="25" height="43" rx="2" fill="none" stroke="${C.b}" stroke-width="1.6"/>`;
   else { const [e, l] = k < 38 ? (xmas ? XFLOWERS : FLOWERS)[k - 34] : (xmas ? XSEASONS : SEASONS)[k - 38];
-    const col = xmas ? (k < 38 ? '#b3262e' : '#1f6b45') : k < 38 ? '#b0477a' : '#2f7a4a';
-    s = `<text x="28" y="48" font-size="32" text-anchor="middle">${e}</text><text x="28" y="70" font-size="10.5" font-weight="700" text-anchor="middle" fill="${col}" font-family="-apple-system,sans-serif">${l}</text>`;
+    const col = xmas ? (k < 38 ? '#9a6a1c' : '#2f6fa8') : k < 38 ? '#b0477a' : '#2f7a4a';
+    if (xmas) s = `<rect x="3" y="3" width="50" height="72" rx="6" fill="${k < 38 ? '#f6e3b4' : '#dcebf7'}" fill-opacity=".55" stroke="${k < 38 ? '#c9973a' : '#7fb0dc'}" stroke-width="2.4"/>`;
+    s += `<text x="28" y="48" font-size="32" text-anchor="middle">${e}</text><text x="28" y="70" font-size="${l.length > 8 ? 8.6 : 10.5}" font-weight="700" text-anchor="middle" fill="${col}" font-family="-apple-system,sans-serif">${l}</text>`;
   }
   return `<svg viewBox="0 0 56 78" xmlns="http://www.w3.org/2000/svg">${s}</svg>`;
 }
@@ -554,7 +555,7 @@ function settingsDialog() {
     <h2 style="margin-top:22px;font-size:24px">So wird gespielt</h2>
     <p>Tippe nacheinander zwei <b>gleiche</b> Steine an – sie verschwinden. Ziel ist es, alle Steine abzuräumen.</p>
     <p>Ein Stein ist nur <b>frei</b>, wenn kein anderer Stein auf ihm liegt und er links <i>oder</i> rechts nicht eingeklemmt ist.</p>
-    <p>${prefs.theme === 'xmas' ? 'Alle <b>Weihnachtssteine</b> (Baum, Stern, Geschenk, Glocke) passen zueinander, ebenso alle <b>Wintersteine</b> (Schneemann, Kerze, Plätzchen, Rentier).' : 'Alle <b>Blumen</b> passen zueinander, ebenso alle <b>Jahreszeiten</b>.'} Jedes neue Spiel ist garantiert lösbar.</p>
+    <p>${prefs.theme === 'xmas' ? 'Alle Steine mit <b>goldenem Rahmen</b> passen zueinander (drinnen: Baum, Geschenk, Kerze, Plätzchen), ebenso alle mit <b>eisblauem Rahmen</b> (draußen: Schneemann, Rentier, Schlitten, Schnee).' : 'Alle <b>Blumen</b> passen zueinander, ebenso alle <b>Jahreszeiten</b>.'} Jedes neue Spiel ist garantiert lösbar.</p>
     <p style="color:#7a6c55">Gewonnene Spiele: <b>${total}</b><span style="float:right">Version ${VERSION}</span></p>
     <div class="row"><button class="pbtn primary" data-x>Fertig</button></div>`, (o, close) => {
     o.querySelectorAll('.sw').forEach(sw => sw.onclick = () => { const p = sw.dataset.p; prefs[p] = !prefs[p]; sw.classList.toggle('on', prefs[p]); applyPrefs(); });
