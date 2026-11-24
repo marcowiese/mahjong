@@ -1,6 +1,6 @@
 // Offline-Cache: Das Spiel funktioniert nach dem ersten Öffnen auch ohne Internet.
-// Bei jeder neuen Version hier UND bei VERSION in index.html hochzählen.
-const CACHE = 'mahjong-v10';
+const VERSION = '1.2.0'; // Major.Minor.Patch – immer gleich wie VERSION in index.html
+const CACHE = 'mahjong-' + VERSION;
 const FILES = ['./', 'index.html', 'manifest.webmanifest', 'icon.png', 'icon-512.png'];
 // cache:'reload' umgeht den Browser-Zwischenspeicher, damit wirklich die neuen Dateien im Offline-Cache landen
 self.addEventListener('install', e => e.waitUntil(caches.open(CACHE).then(c => c.addAll(FILES.map(f => new Request(f, { cache: 'reload' })))).then(() => self.skipWaiting())));

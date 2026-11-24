@@ -16,8 +16,29 @@
 body.theme-blue{--bg1:#2459a0;--bg2:#08152b;--jade:#2459a0}
 body.theme-red{--bg1:#8a2433;--bg2:#24060b;--jade:#8a2433}
 body.theme-wood{--bg1:#8a5a2b;--bg2:#2a170a;--jade:#7a4a1f}
-body.theme-xmas{--bg1:#1f6b45;--bg2:#03160d;--jade:#b3262e;--accent:#f5c451}
-body.theme-xmas #pattern{opacity:.09;background-size:72px 72px;
+body.theme-xmas{--bg1:#1c5a3c;--bg2:#03130b;--jade:#a5222b;--accent:#f5c451}
+/* Rote Rückseite mit feiner Goldlinie zwischen Elfenbein und Rot */
+body.theme-xmas .tile{--depth:1px 1px 0 #efe3c3,2px 2px 0 #e7d8b0,3px 3px 0 #ddcb9d,4px 4px 0 #d4b36a,5px 5px 0 var(--jade),6px 6px 0 var(--jade),
+    7px 7px 0 var(--jade-d),8px 8px 0 var(--jade-d),9px 9px 0 rgba(0,0,0,.4),11px 13px 8px rgba(0,0,0,.35),16px 22px 26px rgba(0,0,0,.32)}
+/* Warmes Licht wie von einer unscharfen Lichterkette am Rand, atmet ganz langsam */
+#glow{position:fixed;inset:0;pointer-events:none;display:none}
+body.theme-xmas #glow{display:block}
+#glow::before,#glow::after{content:"";position:absolute;inset:0}
+#glow::before{background:
+  radial-gradient(circle at 50% 42%,rgba(255,190,110,0.16),transparent 63.2%),
+  radial-gradient(circle at 4% 18%,rgba(255,200,120,0.48),transparent 5.2%),radial-gradient(circle at 11% 7%,rgba(255,214,150,0.35),transparent 3.7%),
+  radial-gradient(circle at 92% 10%,rgba(255,196,120,0.42),transparent 4.6%),radial-gradient(circle at 97% 34%,rgba(255,180,100,0.35),transparent 5.8%),
+  radial-gradient(circle at 2% 62%,rgba(255,190,110,0.32),transparent 6.3%),radial-gradient(circle at 96% 78%,rgba(255,206,140,0.35),transparent 4.6%),
+  radial-gradient(circle at 7% 94%,rgba(255,180,100,0.32),transparent 5.8%);
+  animation:breathe 11s ease-in-out infinite alternate}
+#glow::after{background:
+  radial-gradient(circle at 18% 3%,rgba(255,220,160,0.32),transparent 3.4%),radial-gradient(circle at 82% 4%,rgba(255,206,140,0.32),transparent 4.0%),
+  radial-gradient(circle at 99% 56%,rgba(255,214,150,0.29),transparent 4.0%),radial-gradient(circle at 3% 40%,rgba(255,220,160,0.29),transparent 3.4%),
+  radial-gradient(circle at 90% 97%,rgba(255,190,110,0.29),transparent 5.8%),radial-gradient(circle at 26% 99%,rgba(255,206,140,0.22),transparent 4.6%);
+  animation:breathe 14s ease-in-out -7s infinite alternate}
+@keyframes breathe{from{opacity:.55}to{opacity:1}}
+@media (prefers-reduced-motion:reduce){#glow::before,#glow::after{animation:none}}
+body.theme-xmas #pattern{opacity:.05;background-size:72px 72px;
   background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='72' height='72'%3E%3Cg stroke='white' stroke-width='1.3' stroke-linecap='round' fill='none'%3E%3Cpath d='M18 8v20M8.5 13l19 10M8.5 23l19-10M14 9l4 3 4-3M14 27l4-3 4 3'/%3E%3C/g%3E%3Cpath d='M54 42l2.6 6.2 6.7.5-5.1 4.3 1.6 6.5L54 56l-5.8 3.5 1.6-6.5-5.1-4.3 6.7-.5z' fill='white'/%3E%3C/svg%3E")}
 #snow{position:fixed;inset:0;width:100%;height:100%;pointer-events:none;display:none}
 body.theme-xmas #snow{display:block}
@@ -123,13 +144,18 @@ body.hl .tile.blocked::after{background:rgba(45,28,0,.3)}
 .big{font-size:56px;text-align:center;margin:4px 0}
 .edition{position:fixed;right:calc(env(safe-area-inset-right) + 18px);bottom:calc(env(safe-area-inset-bottom) + 10px);z-index:5;pointer-events:none;font-family:"Iowan Old Style",Palatino,Georgia,serif;font-style:italic;font-size:16px;letter-spacing:.6px;color:#fff;opacity:.6;text-shadow:0 1px 4px rgba(0,0,0,.5)}
 .confetti{position:fixed;inset:0;width:100%;height:100%;pointer-events:none;z-index:200}
-.toast{position:fixed;left:50%;bottom:calc(env(safe-area-inset-bottom) + 28px);transform:translateX(-50%);z-index:50;background:rgba(0,0,0,.7);
-  padding:14px 22px;border-radius:16px;font-size:18px;animation:toast 2.4s forwards;pointer-events:none;white-space:nowrap}
-@keyframes toast{0%{opacity:0;transform:translate(-50%,20px)}10%,80%{opacity:1;transform:translate(-50%,0)}100%{opacity:0}}
+.notice{position:fixed;left:50%;top:calc(env(safe-area-inset-top) + 14px);z-index:300;display:flex;align-items:center;gap:10px;
+  padding:12px 20px;border-radius:22px;background:rgba(20,24,22,.92);color:#fff;font-size:17px;font-weight:600;white-space:nowrap;pointer-events:none;
+  -webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);box-shadow:0 8px 24px rgba(0,0,0,.3);
+  transform:translate(-50%,-16px);opacity:0;transition:opacity .4s,transform .4s cubic-bezier(.2,1,.3,1)}
+.notice.show{transform:translate(-50%,0);opacity:1}
+.notice .spin{width:16px;height:16px;border-radius:50%;border:2px solid rgba(255,255,255,.3);border-top-color:#fff;animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
 </style>
 </head>
 <body class="hl">
 <div id="pattern"></div>
+<div id="glow"></div>
 <canvas id="snow"></canvas>
 <header>
   <div class="brand"><span class="seal">麻</span><span class="txt">Mahjong</span></div>
@@ -156,7 +182,7 @@ body.hl .tile.blocked::after{background:rgba(45,28,0,.3)}
 (() => {
 'use strict';
 const W = 64, H = 86, HW = W / 2, HH = H / 2, LZ = 12, DEPTH = 12;
-const VERSION = 10; // zusammen mit CACHE in sw.js hochzählen
+const VERSION = '1.2.0'; // Major.Minor.Patch – bei jeder Änderung zusammen mit VERSION in sw.js anpassen
 const $ = s => document.querySelector(s);
 const rnd = n => Math.floor(Math.random() * n);
 const shuffle = a => { for (let i = a.length - 1; i > 0; i--) { const j = rnd(i + 1); [a[i], a[j]] = [a[j], a[i]]; } return a; };
@@ -291,6 +317,7 @@ function pairPool() {
 
 /* ---------- State ---------- */
 let S = null, NB = [], els = [], sel = null, busy = false;
+const firstRun = !load('mj_prefs');
 const prefs = Object.assign({ sound: true, hl: true, theme: 'jade' }, load('mj_prefs') || {});
 const stats = Object.assign({ won: {}, best: {} }, load('mj_stats') || {});
 function load(k) { try { return JSON.parse(localStorage.getItem(k)); } catch (e) { return null; } }
@@ -344,16 +371,23 @@ function fit(instant) {
   live.forEach(p => { x0 = Math.min(x0, p.x); y0 = Math.min(y0, p.y); x1 = Math.max(x1, p.x + W + DEPTH); y1 = Math.max(y1, p.y + H + DEPTH); });
   if (!live.length) return;
   const bw = x1 - x0, bh = y1 - y0, aw = innerWidth - 24;
-  const place = top => {
-    const ah = innerHeight - top - 46, s = Math.min(aw / bw, ah / bh, 2);
-    return { s, ox: (innerWidth - bw * s) / 2 - x0 * s, oy: top + (ah - bh * s) / 2 + 4 - y0 * s };
+  const place = (top, bottom = 40) => {
+    const ah = innerHeight - top - bottom, s = Math.min(aw / bw, ah / bh, 2);
+    return { s, ox: (innerWidth - bw * s) / 2 - x0 * s, oy: top + (ah - bh * s) / 2 - y0 * s };
   };
-  let { s, ox, oy } = place(prefs.collapsed ? safeTop + 12 : hdr.getBoundingClientRect().height);
+  // Trifft ein Stein (samt Kante und Schatten) eines der Rechtecke [links, oben, rechts, unten]?
+  const hits = (r, { s, ox, oy }) => live.some(p => ox + p.x * s < r[2] && ox + (p.x + W + DEPTH + 8) * s > r[0] && oy + p.y * s < r[3] && oy + (p.y + H + DEPTH + 10) * s > r[1]);
+  let top = prefs.collapsed ? safeTop + 12 : hdr.getBoundingClientRect().height, bottom = 40, pl = place(top);
   if (prefs.collapsed) {
     // Liegt ein Stein unter dem schwebenden Tipp-Knopf oben rechts? Dann Spielfeld etwas tiefer setzen.
     const b = $('#bHintFloat'), bx = innerWidth - 14 - b.offsetWidth - 8, by = safeTop + 10 + b.offsetHeight + 8;
-    if (live.some(p => ox + (p.x + W + DEPTH) * s > bx && oy + p.y * s < by)) ({ s, ox, oy } = place(by));
+    if (hits([bx, 0, innerWidth, by], pl)) pl = place(top = by);
   }
+  // Unten dürfen weder "Wiese Edition" noch der Menü-Knopf verdeckt werden.
+  const low = [$('.edition'), prefs.collapsed && $('#bShow')].filter(Boolean).map(e => e.getBoundingClientRect()).filter(r => r.width)
+    .map(r => [r.left - 6, r.top - 6, r.right + 6, innerHeight]);
+  if (low.some(r => hits(r, pl))) pl = place(top, bottom = innerHeight - Math.min(...low.map(r => r[1])));
+  const { s, ox, oy } = pl;
   board.style.transition = instant ? 'none' : 'transform 1.6s cubic-bezier(.45,0,.2,1)';
   board.style.transform = `translate(${ox}px,${oy}px) scale(${s})`;
 }
@@ -584,12 +618,20 @@ function confetti() {
   })(t0);
 }
 
+/* ---------- Hinweis oben ("Update wird geladen …") ---------- */
+function notice(html, ms) {
+  document.querySelectorAll('.notice').forEach(n => n.remove());
+  const n = document.createElement('div'); n.className = 'notice'; n.innerHTML = html; document.body.appendChild(n);
+  requestAnimationFrame(() => requestAnimationFrame(() => n.classList.add('show')));
+  if (ms) setTimeout(() => { n.classList.remove('show'); setTimeout(() => n.remove(), 450); }, ms);
+}
+
 /* ---------- Schneefall (nur Weihnachts-Thema, hinter dem Spielfeld) ---------- */
 const snow = {
   on: false, raf: 0, flakes: [],
   toggle(on) {
     if (on === this.on) return; this.on = on;
-    if (on) { this.resize(); this.flakes = Array.from({ length: 55 }, () => this.flake(true)); this.last = 0; this.raf = requestAnimationFrame(t => this.frame(t)); }
+    if (on) { this.resize(); this.flakes = Array.from({ length: matchMedia('(prefers-reduced-motion: reduce)').matches ? 0 : 32 }, () => this.flake(true)); this.last = 0; this.raf = requestAnimationFrame(t => this.frame(t)); }
     else cancelAnimationFrame(this.raf);
   },
   resize() {
@@ -598,7 +640,7 @@ const snow = {
   },
   flake(anywhere) {
     const z = .3 + Math.random() * .7;
-    return { x: Math.random() * this.w, y: anywhere ? Math.random() * this.h : -10, r: 1 + z * 2.6, v: 12 + z * 30, a: .25 + z * .5, ph: Math.random() * 6.3, sw: 10 + Math.random() * 20 };
+    return { x: Math.random() * this.w, y: anywhere ? Math.random() * this.h : -10, r: .8 + z * 2, v: 5 + z * 11, a: .12 + z * .3, ph: Math.random() * 6.3, sw: 3 + Math.random() * 6 };
   },
   frame(t) {
     if (!this.on) return;
@@ -607,7 +649,7 @@ const snow = {
     const dt = Math.min((t - (this.last || t)) / 1000, .1); this.last = t;
     const c = this.ctx; c.clearRect(0, 0, this.w, this.h); c.fillStyle = '#fff';
     this.flakes.forEach((f, i) => {
-      f.y += f.v * dt; f.ph += dt * .8;
+      f.y += f.v * dt; f.ph += dt * .25;
       if (f.y > this.h + 10) this.flakes[i] = f = this.flake(false);
       c.globalAlpha = f.a; c.beginPath(); c.arc(f.x + Math.sin(f.ph) * f.sw, f.y, f.r, 0, 6.3); c.fill();
     });
@@ -712,11 +754,18 @@ if (saved && saved.tiles && !saved.done && saved.tiles.some(t => !t.gone)) {
 if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
   const hadSW = !!navigator.serviceWorker.controller;
   navigator.serviceWorker.register('sw.js').then(reg => {
+    reg.addEventListener('updatefound', () => { if (hadSW) notice('<span class="spin"></span>Neue Version wird geladen …'); });
     document.addEventListener('visibilitychange', () => { if (!document.hidden) reg.update().catch(() => {}); });
   }).catch(() => {});
   let reloading = false;
-  navigator.serviceWorker.addEventListener('controllerchange', () => { if (!hadSW || reloading) return; reloading = true; save(); location.reload(); });
+  navigator.serviceWorker.addEventListener('controllerchange', () => {
+    if (!hadSW || reloading) return; reloading = true; save();
+    setTimeout(() => location.reload(), 1200); // Hinweis kurz stehen lassen
+  });
 }
+// Nach einem Update einmal kurz Bescheid geben
+if (!firstRun && prefs.version !== VERSION) setTimeout(() => notice(`✓ Aktualisiert auf Version ${VERSION}`, 3500), 600);
+if (prefs.version !== VERSION) { prefs.version = VERSION; store('mj_prefs', prefs); }
 })();
 </script>
 </body>
