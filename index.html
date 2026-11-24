@@ -695,9 +695,9 @@ $('#bHintFloat').onclick = () => { audio.unlock(); hint(); };
 document.addEventListener('gesturestart', e => e.preventDefault());
 document.addEventListener('visibilitychange', () => document.hidden && save());
 
-// Vom 1. Dezember bis Heilige Drei Könige schaltet das Spiel einmalig auf Weihnachten und danach wieder zurück.
+// Vom 20. November bis Heilige Drei Könige schaltet das Spiel einmalig auf Weihnachten und danach wieder zurück.
 (() => {
-  const d = new Date(), m = d.getMonth(), season = m === 11 || (m === 0 && d.getDate() <= 6), year = d.getFullYear() - (m === 0 ? 1 : 0);
+  const d = new Date(), m = d.getMonth(), season = m === 11 || (m === 10 && d.getDate() >= 20) || (m === 0 && d.getDate() <= 6), year = d.getFullYear() - (m === 0 ? 1 : 0);
   if (season && prefs.xmasAuto !== year) { prefs.xmasAuto = year; prefs.prevTheme = prefs.theme === 'xmas' ? 'jade' : prefs.theme; prefs.theme = 'xmas'; }
   else if (!season && prefs.theme === 'xmas' && prefs.prevTheme) { prefs.theme = prefs.prevTheme; delete prefs.prevTheme; }
 })();
