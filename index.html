@@ -156,6 +156,7 @@ body.hl .tile.blocked::after{background:rgba(45,28,0,.3)}
 (() => {
 'use strict';
 const W = 64, H = 86, HW = W / 2, HH = H / 2, LZ = 12, DEPTH = 12;
+const VERSION = 10; // zusammen mit CACHE in sw.js hochzählen
 const $ = s => document.querySelector(s);
 const rnd = n => Math.floor(Math.random() * n);
 const shuffle = a => { for (let i = a.length - 1; i > 0; i--) { const j = rnd(i + 1); [a[i], a[j]] = [a[j], a[i]]; } return a; };
@@ -344,7 +345,7 @@ function fit(instant) {
   if (!live.length) return;
   const bw = x1 - x0, bh = y1 - y0, aw = innerWidth - 24;
   const place = top => {
-    const ah = innerHeight - top - 36, s = Math.min(aw / bw, ah / bh, 2);
+    const ah = innerHeight - top - 46, s = Math.min(aw / bw, ah / bh, 2);
     return { s, ox: (innerWidth - bw * s) / 2 - x0 * s, oy: top + (ah - bh * s) / 2 + 4 - y0 * s };
   };
   let { s, ox, oy } = place(prefs.collapsed ? safeTop + 12 : hdr.getBoundingClientRect().height);
@@ -521,7 +522,7 @@ function settingsDialog() {
     <p>Tippe nacheinander zwei <b>gleiche</b> Steine an – sie verschwinden. Ziel ist es, alle Steine abzuräumen.</p>
     <p>Ein Stein ist nur <b>frei</b>, wenn kein anderer Stein auf ihm liegt und er links <i>oder</i> rechts nicht eingeklemmt ist.</p>
     <p>${prefs.theme === 'xmas' ? 'Alle <b>Weihnachtssteine</b> (Baum, Stern, Geschenk, Glocke) passen zueinander, ebenso alle <b>Wintersteine</b> (Schneemann, Kerze, Plätzchen, Rentier).' : 'Alle <b>Blumen</b> passen zueinander, ebenso alle <b>Jahreszeiten</b>.'} Jedes neue Spiel ist garantiert lösbar.</p>
-    <p style="color:#7a6c55">Gewonnene Spiele: <b>${total}</b></p>
+    <p style="color:#7a6c55">Gewonnene Spiele: <b>${total}</b><span style="float:right">Version ${VERSION}</span></p>
     <div class="row"><button class="pbtn primary" data-x>Fertig</button></div>`, (o, close) => {
     o.querySelectorAll('.sw').forEach(sw => sw.onclick = () => { const p = sw.dataset.p; prefs[p] = !prefs[p]; sw.classList.toggle('on', prefs[p]); applyPrefs(); });
     o.querySelectorAll('.swatch').forEach(s => s.onclick = () => { prefs.theme = s.dataset.t; delete prefs.prevTheme; o.querySelectorAll('.swatch').forEach(x => x.classList.toggle('cur', x === s)); applyPrefs(); });
@@ -706,7 +707,16 @@ const saved = load('mj_state');
 if (saved && saved.tiles && !saved.done && saved.tiles.some(t => !t.gone)) {
   S = saved; NB = buildNb(S.tiles); render(false); $('#sTime').textContent = fmt(S.time);
 } else newGame(saved && saved.layout || 'turtle');
-if ('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('sw.js').catch(() => {});
+// Updates: Als Homescreen-App wird die Seite oft nur aus dem Hintergrund fortgesetzt, nicht neu geladen.
+// Darum bei jedem Zurückkehren nach einer neuen Version fragen; sobald der neue Service Worker übernimmt, neu laden.
+if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
+  const hadSW = !!navigator.serviceWorker.controller;
+  navigator.serviceWorker.register('sw.js').then(reg => {
+    document.addEventListener('visibilitychange', () => { if (!document.hidden) reg.update().catch(() => {}); });
+  }).catch(() => {});
+  let reloading = false;
+  navigator.serviceWorker.addEventListener('controllerchange', () => { if (!hadSW || reloading) return; reloading = true; save(); location.reload(); });
+}
 })();
 </script>
 </body>
