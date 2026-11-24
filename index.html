@@ -16,6 +16,14 @@
 body.theme-blue{--bg1:#2459a0;--bg2:#08152b;--jade:#2459a0}
 body.theme-red{--bg1:#8a2433;--bg2:#24060b;--jade:#8a2433}
 body.theme-wood{--bg1:#8a5a2b;--bg2:#2a170a;--jade:#7a4a1f}
+body.theme-xmas{--bg1:#1f6b45;--bg2:#03160d;--jade:#b3262e;--accent:#f5c451}
+body.theme-xmas #pattern{opacity:.09;background-size:72px 72px;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='72' height='72'%3E%3Cg stroke='white' stroke-width='1.3' stroke-linecap='round' fill='none'%3E%3Cpath d='M18 8v20M8.5 13l19 10M8.5 23l19-10M14 9l4 3 4-3M14 27l4-3 4 3'/%3E%3C/g%3E%3Cpath d='M54 42l2.6 6.2 6.7.5-5.1 4.3 1.6 6.5L54 56l-5.8 3.5 1.6-6.5-5.1-4.3 6.7-.5z' fill='white'/%3E%3C/svg%3E")}
+#snow{position:fixed;inset:0;width:100%;height:100%;pointer-events:none;display:none}
+body.theme-xmas #snow{display:block}
+body.theme-xmas .brand .seal{background:linear-gradient(145deg,#2f9a5e,#14552f)}
+.swatch.xmas{display:grid;place-items:center;font-size:22px;background:linear-gradient(135deg,#b3262e 50%,#1f6b45 50%)!important}
+.edition .x{display:none}body.theme-xmas .edition .x{display:inline}
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
 html,body{margin:0;height:100%;overflow:hidden;overscroll-behavior:none;touch-action:manipulation}
 body{font-family:-apple-system,"SF Pro Rounded",system-ui,"Segoe UI",sans-serif;color:#fff;
@@ -122,6 +130,7 @@ body.hl .tile.blocked::after{background:rgba(45,28,0,.3)}
 </head>
 <body class="hl">
 <div id="pattern"></div>
+<canvas id="snow"></canvas>
 <header>
   <div class="brand"><span class="seal">麻</span><span class="txt">Mahjong</span></div>
   <div class="stats">
@@ -140,7 +149,7 @@ body.hl .tile.blocked::after{background:rgba(45,28,0,.3)}
 </header>
 <button id="bHintFloat" aria-label="Tipp"><svg viewBox="0 0 24 24"><path d="M15 14c.2-1 .7-1.7 1.5-2.5 1-.9 1.5-2.2 1.5-3.5A6 6 0 0 0 6 8c0 1 .2 2.2 1.5 3.5.7.7 1.3 1.5 1.5 2.5"/><path d="M9 18h6M10 22h4"/></svg>Tipp</button>
 <button id="bShow" aria-label="Menü zeigen"><svg viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h16"/></svg>Menü</button>
-<div class="edition">Wiese Edition</div>
+<div class="edition"><span class="x">Frohe Weihnachten · </span>Wiese Edition</div>
 <div id="stage"><div id="board"></div></div>
 
 <script>
@@ -209,8 +218,11 @@ const NUM = ['一', '二', '三', '四', '五', '六', '七', '八', '九'];
 const WINDS = [['東', 'O'], ['南', 'S'], ['西', 'W'], ['北', 'N']];
 const FLOWERS = [['🌸', 'Blume'], ['🌺', 'Blume'], ['🌼', 'Blume'], ['🌷', 'Blume']];
 const SEASONS = [['🌱', 'Frühling'], ['☀️', 'Sommer'], ['🍂', 'Herbst'], ['❄️', 'Winter']];
+// Im Weihnachts-Thema werden Blumen und Jahreszeiten zu Weihnachts- und Wintersteinen
+const XFLOWERS = [['🎄', 'Baum'], ['⭐', 'Stern'], ['🎁', 'Geschenk'], ['🔔', 'Glocke']];
+const XSEASONS = [['⛄', 'Schneemann'], ['🕯️', 'Kerze'], ['🍪', 'Plätzchen'], ['🦌', 'Rentier']];
 const idx = t => `<text x="5" y="11" font-size="10" font-weight="700" fill="#9a8a6a" font-family="-apple-system,sans-serif">${t}</text>`;
-function faceSvg(k) {
+function faceSvg(k, xmas) {
   let s = '';
   if (k < 9) { const n = k + 1;
     if (n === 1) s = `<circle cx="28" cy="39" r="22" fill="${C.g}"/><circle cx="28" cy="39" r="18" fill="#fff"/><circle cx="28" cy="39" r="16" fill="${C.r}"/>` +
@@ -233,12 +245,14 @@ function faceSvg(k) {
   } else if (k === 31) s = `<text x="28" y="56" font-size="46" font-weight="700" text-anchor="middle" fill="${C.r}" font-family="${CJK}">中</text>`;
   else if (k === 32) s = `<text x="28" y="55" font-size="42" font-weight="700" text-anchor="middle" fill="${C.g}" font-family="${CJK}">發</text>`;
   else if (k === 33) s = `<rect x="9" y="11" width="38" height="56" rx="5" fill="none" stroke="${C.b}" stroke-width="4"/><rect x="15.5" y="17.5" width="25" height="43" rx="2" fill="none" stroke="${C.b}" stroke-width="1.6"/>`;
-  else { const [e, l] = k < 38 ? FLOWERS[k - 34] : SEASONS[k - 38]; const col = k < 38 ? '#b0477a' : '#2f7a4a';
+  else { const [e, l] = k < 38 ? (xmas ? XFLOWERS : FLOWERS)[k - 34] : (xmas ? XSEASONS : SEASONS)[k - 38];
+    const col = xmas ? (k < 38 ? '#b3262e' : '#1f6b45') : k < 38 ? '#b0477a' : '#2f7a4a';
     s = `<text x="28" y="48" font-size="32" text-anchor="middle">${e}</text><text x="28" y="70" font-size="10.5" font-weight="700" text-anchor="middle" fill="${col}" font-family="-apple-system,sans-serif">${l}</text>`;
   }
   return `<svg viewBox="0 0 56 78" xmlns="http://www.w3.org/2000/svg">${s}</svg>`;
 }
-const FACES = Array.from({ length: 42 }, (_, k) => faceSvg(k));
+const FACE_SETS = [false, true].map(x => Array.from({ length: 42 }, (_, k) => faceSvg(k, x)));
+let FACES = FACE_SETS[0];
 
 /* ---------- Board logic ---------- */
 function buildNb(P) {
@@ -497,26 +511,29 @@ function newDialog() {
   });
 }
 function settingsDialog() {
-  const themes = [['jade', '#17644e'], ['blue', '#2459a0'], ['red', '#8a2433'], ['wood', '#8a5a2b']];
+  const themes = [['jade', '#17644e'], ['blue', '#2459a0'], ['red', '#8a2433'], ['wood', '#8a5a2b'], ['xmas', '']];
   const total = Object.values(stats.won).reduce((a, b) => a + b, 0);
   modal(`<h2>Optionen</h2>
     <div class="set">Töne<div class="sw ${prefs.sound ? 'on' : ''}" data-p="sound"></div></div>
     <div class="set">Blockierte Steine abdunkeln<div class="sw ${prefs.hl ? 'on' : ''}" data-p="hl"></div></div>
-    <div class="set">Hintergrund<div class="swatches">${themes.map(([n, c]) => `<div class="swatch ${prefs.theme === n ? 'cur' : ''}" data-t="${n}" style="background:${c}"></div>`).join('')}</div></div>
+    <div class="set">Hintergrund<div class="swatches">${themes.map(([n, c]) => `<div class="swatch ${n} ${prefs.theme === n ? 'cur' : ''}" data-t="${n}" style="background:${c}">${n === 'xmas' ? '🎄' : ''}</div>`).join('')}</div></div>
     <h2 style="margin-top:22px;font-size:24px">So wird gespielt</h2>
     <p>Tippe nacheinander zwei <b>gleiche</b> Steine an – sie verschwinden. Ziel ist es, alle Steine abzuräumen.</p>
     <p>Ein Stein ist nur <b>frei</b>, wenn kein anderer Stein auf ihm liegt und er links <i>oder</i> rechts nicht eingeklemmt ist.</p>
-    <p>Alle <b>Blumen</b> passen zueinander, ebenso alle <b>Jahreszeiten</b>. Jedes neue Spiel ist garantiert lösbar.</p>
+    <p>${prefs.theme === 'xmas' ? 'Alle <b>Weihnachtssteine</b> (Baum, Stern, Geschenk, Glocke) passen zueinander, ebenso alle <b>Wintersteine</b> (Schneemann, Kerze, Plätzchen, Rentier).' : 'Alle <b>Blumen</b> passen zueinander, ebenso alle <b>Jahreszeiten</b>.'} Jedes neue Spiel ist garantiert lösbar.</p>
     <p style="color:#7a6c55">Gewonnene Spiele: <b>${total}</b></p>
     <div class="row"><button class="pbtn primary" data-x>Fertig</button></div>`, (o, close) => {
     o.querySelectorAll('.sw').forEach(sw => sw.onclick = () => { const p = sw.dataset.p; prefs[p] = !prefs[p]; sw.classList.toggle('on', prefs[p]); applyPrefs(); });
-    o.querySelectorAll('.swatch').forEach(s => s.onclick = () => { prefs.theme = s.dataset.t; o.querySelectorAll('.swatch').forEach(x => x.classList.toggle('cur', x === s)); applyPrefs(); });
+    o.querySelectorAll('.swatch').forEach(s => s.onclick = () => { prefs.theme = s.dataset.t; delete prefs.prevTheme; o.querySelectorAll('.swatch').forEach(x => x.classList.toggle('cur', x === s)); applyPrefs(); });
     o.querySelector('[data-x]').onclick = close;
   });
 }
 function applyPrefs() {
   document.body.className = (prefs.hl ? 'hl ' : '') + (prefs.collapsed ? 'collapsed ' : '') + (prefs.theme !== 'jade' ? 'theme-' + prefs.theme : '');
   store('mj_prefs', prefs);
+  const xmas = prefs.theme === 'xmas', set = FACE_SETS[+xmas];
+  if (set !== FACES) { FACES = set; if (S) S.tiles.forEach(t => { if (!t.gone && t.k >= 34) els[t.id].querySelector('.face').innerHTML = FACES[t.k]; }); }
+  snow.toggle(xmas);
 }
 function toggleMenu() {
   prefs.collapsed = !prefs.collapsed; applyPrefs();
@@ -543,7 +560,7 @@ function win() {
   if (rec) stats.best[S.layout] = S.time;
   store('mj_stats', stats); save();
   setTimeout(() => { audio.play('win'); confetti(); }, 500);
-  setTimeout(() => modal(`<div class="big">🎉</div><h2 style="text-align:center">Geschafft!</h2>
+  setTimeout(() => modal(`<div class="big">${prefs.theme === 'xmas' ? '🎄' : '🎉'}</div><h2 style="text-align:center">Geschafft!</h2>
     <p style="text-align:center;font-size:20px">Alle Steine abgeräumt in <b>${fmt(S.time)}</b>.${rec ? '<br>✨ Neuer Rekord! ✨' : ''}</p>
     <div class="row" style="justify-content:center"><button class="pbtn" data-l>Anderes Spielfeld</button><button class="pbtn primary" data-n>Nochmal spielen</button></div>`, (o, close) => {
     o.querySelector('[data-n]').onclick = () => { close(); setTimeout(() => newGame(S.layout), 200); };
@@ -554,7 +571,7 @@ function confetti() {
   const c = document.createElement('canvas'); c.className = 'confetti'; document.body.appendChild(c);
   const dpr = devicePixelRatio || 1, w = innerWidth, h = innerHeight; c.width = w * dpr; c.height = h * dpr;
   const ctx = c.getContext('2d'); ctx.scale(dpr, dpr);
-  const cols = ['#ffd34d', '#ff6b6b', '#4ecdc4', '#a78bfa', '#ffffff', '#7bd88f', '#ff9f43'], P = [];
+  const cols = prefs.theme === 'xmas' ? ['#f5c451', '#d63a3a', '#ffffff', '#2e9b5b', '#e8e8e8', '#b3262e'] : ['#ffd34d', '#ff6b6b', '#4ecdc4', '#a78bfa', '#ffffff', '#7bd88f', '#ff9f43'], P = [];
   const shoot = (x, dir) => { for (let i = 0; i < 120; i++) P.push({ x, y: h, vx: dir * (4 + Math.random() * 12) + (Math.random() - .5) * 4, vy: -(14 + Math.random() * 14), s: 7 + Math.random() * 8, r: Math.random() * 6, vr: (Math.random() - .5) * .4, c: cols[rnd(cols.length)] }); };
   shoot(0, 1); shoot(w, -1); setTimeout(() => { shoot(w * .3, .3); shoot(w * .7, -.3); }, 500);
   const t0 = performance.now();
@@ -565,6 +582,37 @@ function confetti() {
     if (t - t0 < 5000) requestAnimationFrame(f); else c.remove();
   })(t0);
 }
+
+/* ---------- Schneefall (nur Weihnachts-Thema, hinter dem Spielfeld) ---------- */
+const snow = {
+  on: false, raf: 0, flakes: [],
+  toggle(on) {
+    if (on === this.on) return; this.on = on;
+    if (on) { this.resize(); this.flakes = Array.from({ length: 55 }, () => this.flake(true)); this.last = 0; this.raf = requestAnimationFrame(t => this.frame(t)); }
+    else cancelAnimationFrame(this.raf);
+  },
+  resize() {
+    const c = $('#snow'), d = devicePixelRatio || 1; this.w = innerWidth; this.h = innerHeight;
+    c.width = this.w * d; c.height = this.h * d; this.ctx = c.getContext('2d'); this.ctx.setTransform(d, 0, 0, d, 0, 0);
+  },
+  flake(anywhere) {
+    const z = .3 + Math.random() * .7;
+    return { x: Math.random() * this.w, y: anywhere ? Math.random() * this.h : -10, r: 1 + z * 2.6, v: 12 + z * 30, a: .25 + z * .5, ph: Math.random() * 6.3, sw: 10 + Math.random() * 20 };
+  },
+  frame(t) {
+    if (!this.on) return;
+    this.raf = requestAnimationFrame(t => this.frame(t));
+    if (t - this.last < 33) return; // ~30 Bilder/s reichen und schonen den Akku
+    const dt = Math.min((t - (this.last || t)) / 1000, .1); this.last = t;
+    const c = this.ctx; c.clearRect(0, 0, this.w, this.h); c.fillStyle = '#fff';
+    this.flakes.forEach((f, i) => {
+      f.y += f.v * dt; f.ph += dt * .8;
+      if (f.y > this.h + 10) this.flakes[i] = f = this.flake(false);
+      c.globalAlpha = f.a; c.beginPath(); c.arc(f.x + Math.sin(f.ph) * f.sw, f.y, f.r, 0, 6.3); c.fill();
+    });
+  }
+};
+addEventListener('resize', () => snow.on && snow.resize());
 
 /* ---------- Sound ---------- */
 const audio = {
@@ -612,6 +660,14 @@ const audio = {
     g.gain.setValueAtTime(0, at); g.gain.linearRampToValueAtTime(vol, at + .08); g.gain.exponentialRampToValueAtTime(.0001, at + dur);
     o.connect(g).connect(this.out); o.start(at); o.stop(at + dur + .05);
   },
+  // Glöckchen: Grundton plus unharmonische Obertöne, schnell abklingend
+  bell(f, t, vol) {
+    [[1, 1, 1.6], [2.76, .4, .7], [5.4, .18, .35]].forEach(([m, v, d]) => {
+      const c = this.ctx, at = c.currentTime + t, o = c.createOscillator(), g = c.createGain(); o.frequency.value = f * m;
+      g.gain.setValueAtTime(0, at); g.gain.linearRampToValueAtTime(vol * v, at + .005); g.gain.exponentialRampToValueAtTime(.0001, at + d);
+      o.connect(g).connect(this.out); o.start(at); o.stop(at + d + .05);
+    });
+  },
   play(n) {
     if (!prefs.sound || !this.ctx) return;
     if (n === 'tick') this.ping(0, 8300, .07);
@@ -622,6 +678,7 @@ const audio = {
     else if (n === 'no') this.click(0, 700, .12, .03);
     else if (n === 'hint') { this.click(0, 3600, .07, .015); this.click(.11, 3600, .06, .015); }
     else if (n === 'shuffle') { for (let i = 0; i < 12; i++) this.click(i * .04 + Math.random() * .02, 2000 + rnd(1400), .06 + Math.random() * .08, .035, 900 + rnd(600)); }
+    else if (n === 'win' && prefs.theme === 'xmas') { [784, 659, 523, 659, 784, 1047].forEach((f, i) => this.bell(f, i * .16, .05)); }
     else if (n === 'win') { [392, 523, 659, 784].forEach((f, i) => this.tone(f, i * .06, 1.8, .035)); }
   }
 };
@@ -638,6 +695,12 @@ $('#bHintFloat').onclick = () => { audio.unlock(); hint(); };
 document.addEventListener('gesturestart', e => e.preventDefault());
 document.addEventListener('visibilitychange', () => document.hidden && save());
 
+// Vom 1. Dezember bis Heilige Drei Könige schaltet das Spiel einmalig auf Weihnachten und danach wieder zurück.
+(() => {
+  const d = new Date(), m = d.getMonth(), season = m === 11 || (m === 0 && d.getDate() <= 6), year = d.getFullYear() - (m === 0 ? 1 : 0);
+  if (season && prefs.xmasAuto !== year) { prefs.xmasAuto = year; prefs.prevTheme = prefs.theme === 'xmas' ? 'jade' : prefs.theme; prefs.theme = 'xmas'; }
+  else if (!season && prefs.theme === 'xmas' && prefs.prevTheme) { prefs.theme = prefs.prevTheme; delete prefs.prevTheme; }
+})();
 applyPrefs();
 const saved = load('mj_state');
 if (saved && saved.tiles && !saved.done && saved.tiles.some(t => !t.gone)) {
